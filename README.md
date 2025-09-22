@@ -1,18 +1,29 @@
-# auna
+# 🪷 AUNA
 
-## Acerca de
+## 📖 Acerca de
 
-Proyecto por @janisepulveda.
+**AUNA** es un proyecto de diseño y tecnología inspirado en la neuralgia del trigémino, una enfermedad crónica caracterizada por un dolor intenso pero invisible.  
+
+El sistema combina un **amuleto portátil** con una **aplicación móvil** para registrar y visualizar experiencias de dolor.  
+Con un **toque**, el amuleto permite registrar una crisis, indicando en la app:  
+
+- Intensidad del dolor (escala de 1 a 10).  
+- Duración en segundos.  
+- Notas opcionales.  
+
+La aplicación organiza esta información en un calendario y la traduce en un **espacio visual vivo**, inspirado en los jardines: su crecimiento continuo, sus ciclos de apertura y recogimiento, y su imperfección natural.  
 
 ## Stack tecnológico
 
 Estamos usando:
 
-- ESP32-C3
+- ESP32-C3 super mini 
 
 <https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/index.html>
 
 <https://es.aliexpress.com/item/1005007205044247.html>
+
+- Resistencia de presión FSR
 
 ## Instalación para desarrollar
 
