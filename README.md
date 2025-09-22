@@ -1,4 +1,5 @@
 # 🪷 AUNA
+**Proyecto por [@janisepulveda](https://github.com/janisepulveda)**
 
 ## 📖 Acerca de
 
@@ -109,4 +110,4 @@ Esto nos lleva a creer que este chip en particular, en esta dev board, no tiene 
 
 ## Licencia
 
-MIT
+Este proyecto está bajo la Licencia MIT.
