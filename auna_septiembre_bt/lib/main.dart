@@ -1,213 +1,195 @@
+// material.dart: contiene los widgets de material design de flutter.
+// flutter_reactive_ble.dart: la biblioteca que usaremos para la conectividad BLE.
+// permission_handler.dart: para solicitar permisos de bluetooth y ubicación.
+// dart:async: para manejar operaciones asíncronas y streams (flujos de datos).
 import 'package:flutter/material.dart';
-import 'package:universal_ble/universal_ble.dart';
+import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'dart:async';
 
+// la función principal que se ejecuta al iniciar la aplicación.
 void main() {
   runApp(const MyApp());
 }
 
+// MyApp es un widget StatelessWidget, lo que significa que no cambia.
+// es la raíz de la aplicación y define la configuración básica.
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Demo auna',
+      title: 'Monitor de Neuralgia',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
+        // define el tema de la aplicación, como los colores.
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        useMaterial3: true,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      // la página principal de la aplicación.
+      home: const BluetoothConnectionScreen(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+// este es el widget principal que contiene toda la lógica de la UI.
+// es un StatefulWidget porque su estado (conexión, status) va a cambiar.
+class BluetoothConnectionScreen extends StatefulWidget {
+  const BluetoothConnectionScreen({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<BluetoothConnectionScreen> createState() => _BluetoothConnectionScreenState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  UniversalBle ble = UniversalBle();
+// la clase State que maneja la lógica y el estado del widget.
+class _BluetoothConnectionScreenState extends State<BluetoothConnectionScreen> {
+  // instancia de la biblioteca BLE.
+  final _ble = FlutterReactiveBle();
 
-  int _counter = 0;
+  // variables para el estado de la aplicación.
+  // muestran el estado de la conexión en la UI.
+  String _connectionStatus = 'Desconectado';
+  String? _deviceId;  // El ID del dispositivo conectado, si existe.
+  final String _esp32Name = 'Auna'; // Cambia esto al nombre de tu dispositivo BLE
 
-  bool _isConnected = false;
+  // variables para gestionar los "streams" (flujos de datos) de BLE.
+  // es crucial para poder cancelar las operaciones (ej. detener escaneo).
+  StreamSubscription? _scanSubscription;
+  StreamSubscription? _connectionSubscription;
 
-  String hayBLE = "hay BLE :)";
-  String noHayBLE = "no hay BLE :(";
-  late String textoMostradoBLE = noHayBLE;
-
-  String aunNoConectado = "Aún no te has conectado";
-  String conectado = "Te has conectado!";
-  String desconectado = "Te has desconectado";
-
-  late String textoMostradoConexion = aunNoConectado;
-
-  void configurarBLE() {
-    BleDevice device = BleDevice(
-      name: "ESP32",
-      deviceId: "JAMqUXFIU6n60QxdKCND/w==",
-    );
-    device.connect();
-  }
-
-  void revisarSiHayBLE() async {
-    AvailabilityState state =
-        await UniversalBle.getBluetoothAvailabilityState();
-    // Start scan only if Bluetooth is powered on
-    if (state == AvailabilityState.poweredOn) {
-      UniversalBle.startScan(
-        scanFilter: ScanFilter(
-          withServices: ["4fafc201-1fb5-459e-8fcc-c5c9c331914b"],
-          //   withManufacturerData: [
-          //     ManufacturerDataFilter(companyIdentifier: 0x004c),
-          //   ],
-          // withNamePrefix: ["NAME_PREFIX"],
-        ),
-      );
+  // función asíncrona para solicitar los permisos necesarios.
+  // en android, se requieren permisos de bluetooth y ubicación.
+  Future<void> _requestPermissions(BuildContext context) async {
+    // solicita los permisos de bluetooth y ubicación en Android
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      final status = await [
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.locationWhenInUse,
+      ].request();
+      if (status[Permission.bluetoothScan] != PermissionStatus.granted) {
+        debugPrint('Permisos de Bluetooth no concedidos. Verifica la configuración.');
+        setState(() {
+          _connectionStatus = 'Permisos de Bluetooth no concedidos';
+        });
+        return;
+      }
     }
-
-    // Listen to bluetooth availability changes using stream
-    UniversalBle.availabilityStream.listen((state) {
-      if (state == AvailabilityState.poweredOn) {
-        UniversalBle.startScan(
-          scanFilter: ScanFilter(
-            withServices: ["4fafc201-1fb5-459e-8fcc-c5c9c331914b"],
-            // withManufacturerData: [
-            //   ManufacturerDataFilter(companyIdentifier: 0x004c),
-            // ],
-            // withNamePrefix: ["NAME_PREFIX"],
-          ),
-        );
-      }
-    });
-
-    // Or set a handler
-    // UniversalBle.onAvailabilityChange = (state) {};
-
-    UniversalBle.onAvailabilityChange = (state) {
-      avisarQueHayBLE(state);
-    };
   }
 
-  void _incrementCounter() {
+  // función para iniciar el proceso de conexión. se llama cuando se presiona el botón.
+  void _startConnection() async {
     setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+      _connectionStatus = 'Buscando dispositivo...';
     });
+    debugPrint('Comenzando escaneo...');
+
+    try {
+      await _requestPermissions(context);
+      _scanSubscription?.cancel(); // cancela cualquier escaneo previo.
+      // inicia el escaneo de dispositivos BLE.
+      _scanSubscription = _ble.scanForDevices(withServices: []).listen((device) {
+        debugPrint('Dispositivo encontrado: ${device.name}, ID: ${device.id}');
+        if (device.name == _esp32Name) {
+          // si el nombre coincide, detiene el escaneo y se prepara para conectar.
+          _scanSubscription?.cancel();
+          setState(() {
+            _connectionStatus = 'Dispositivo encontrado. Conectando...';
+            _deviceId = device.id;
+          });
+          debugPrint('Conectando a $_esp32Name...');
+          _connectToDevice(device.id);
+        }
+      }, onError: (e) {
+        // manejo de errores durante el escaneo.
+        debugPrint('Error de escaneo: $e');
+        setState(() {
+          _connectionStatus = 'Error de escaneo: $e';
+        });
+      });
+      
+      // detiene el escaneo después de 10 segundos si no encuentra el dispositivo.
+      Future.delayed(const Duration(seconds: 10), () {
+        if (_connectionStatus == 'Buscando dispositivo...') {
+          _scanSubscription?.cancel();
+          setState(() {
+            _connectionStatus = 'No se encontró el dispositivo.';
+          });
+          debugPrint('Escaneo finalizado. No se encontró el dispositivo.');
+        }
+      });
+
+    } catch (e) {
+      debugPrint('Error al solicitar permisos: $e');
+      setState(() {
+        _connectionStatus = 'Error al solicitar permisos: $e';
+      });
+    }
   }
 
-  void avisarQueHayBLE(AvailabilityState state) {
-    setState(() {
-      if (state == AvailabilityState.poweredOn) {
-        textoMostradoBLE = hayBLE;
-      } else {
-        textoMostradoBLE = noHayBLE;
+  // función para conectarse a un dispositivo específico.
+  void _connectToDevice(String deviceId) {
+    // escucha los cambios en el estado de la conexión.
+    _connectionSubscription = _ble.connectToDevice(
+      id: deviceId,
+      connectionTimeout: const Duration(seconds: 10),
+    ).listen((state) {
+      debugPrint('Estado de conexión: ${state.connectionState}');
+      if (state.connectionState == DeviceConnectionState.connected) {
+        setState(() {
+          _connectionStatus = 'Conectado a $_esp32Name';
+        });
+        debugPrint('Conexión exitosa.');
+      } else if (state.connectionState == DeviceConnectionState.disconnected) {
+        setState(() {
+          _connectionStatus = 'Desconectado';
+        });
+        debugPrint('Dispositivo desconectado.');
       }
+    }, onError: (e) {
+      // manejo de errores durante la conexión.
+      debugPrint('Error de conexión: $e');
+      setState(() {
+        _connectionStatus = 'Error de conexión: $e';
+      });
     });
   }
 
-  void _tratarDeConectarAmuleto() {
-    setState(() {
-      revisarSiHayBLE();
-      _isConnected = !_isConnected;
-
-      if (_isConnected) {
-        textoMostradoConexion = conectado;
-        configurarBLE();
-      } else {
-        textoMostradoConexion = desconectado;
-      }
-    });
+  // función para desconectar el dispositivo.
+  void _disconnect() async {
+    if (_deviceId != null) {
+      debugPrint('Desconectando...');
+      setState(() {
+        _connectionStatus = 'Desconectando...';
+      });
+      _connectionSubscription?.cancel();
+    }
+    _scanSubscription?.cancel();
   }
 
+  // el método build es donde se construye la interfaz de usuario.
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: const Text('Monitor de Neuralgia'),
       ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text("Ana Pérez"),
-            const Text("ana.perez@gmail.com"),
-            TextButton(
-              onPressed: _tratarDeConectarAmuleto,
-              child: Text('Conectar amuleto'),
-            ),
-            Text(
-              textoMostradoConexion,
-              style: Theme.of(context).textTheme.headlineMedium,
+            // muestra el estado actual de la conexión.
+            Text(_connectionStatus, style: const TextStyle(fontSize: 18)),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              // el evento onPressed cambia según el estado de la conexión.
+              onPressed: _connectionStatus.contains('Conectado') ? _disconnect : _startConnection,
+              // el texto del botón cambia según el estado.
+              child: Text(_connectionStatus.contains('Conectado') ? 'Desconectar' : 'Conectar BLE'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
