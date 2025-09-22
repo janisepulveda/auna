@@ -50,7 +50,7 @@ Sensores y componentes en exploración:
 - Herramientas → Puerto → `/dev/cu.usbserial…` (Mac/Linux) o equivalente en Windows  
 6. Subir el código de ejemplo: [`/arduino/ble_server.ino`](arduino/ble_server.ino)  
 
-> 🔹 Este código de ejemplo **le da el nombre `Auna` a la placa**, que será usado posteriormente por la app Flutter para conectarse automáticamente al dispositivo BLE.
+🔹 Este código de ejemplo **le da el nombre `Auna` a la placa**, que será usado posteriormente por la app Flutter para conectarse automáticamente al dispositivo BLE.
 
 > ⚠️ Nota: Esta placa soporta **BLE**, pero no Bluetooth clásico. Si aparece:
 >
