@@ -91,6 +91,14 @@ flutter run
 ```
 - La app buscará automáticamente el dispositivo BLE llamado `Auna` y se conectará.
 
+## 📚 Bibliotecas y recursos Flutter
+
+En el proyecto usamos las siguientes librerías y referencias:  
+
+- [flutter_reactive_ble](https://pub.dev/packages/flutter_reactive_ble) – Manejo de BLE en Flutter.  
+- [permission_handler](https://pub.dev/packages/permission_handler) – Manejo de permisos en Android/iOS.  
+- [dart:async](https://api.flutter.dev/flutter/dart-async/) – Librería oficial de Dart para programación asíncrona y streams.
+
 ## 🚀 Estado del proyecto
 Actualmente en etapa de **prototipado**:  
 - Servidor BLE básico en ESP32-C3 funcionando.  
