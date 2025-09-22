@@ -19,7 +19,7 @@ Estamos usando:
 
 - [ESP32-C3 Super Mini](https://es.aliexpress.com/item/1005007205044247.html)  
 - [ESP-IDF / documentación oficial](https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/index.html)  
-- [Arduino IDE 2.0 para prototipado inicial](https://www.arduino.cc/en/software)  
+- [Arduino IDE 2.0](https://www.arduino.cc/en/software) para prototipado inicial.  
 - [Flutter](https://flutter.dev/) para la app móvil.
 
 Sensores y componentes en exploración:  
