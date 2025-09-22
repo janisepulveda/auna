@@ -97,7 +97,12 @@ En el proyecto usamos las siguientes librerías y referencias:
 
 - [flutter_reactive_ble](https://pub.dev/packages/flutter_reactive_ble) – Manejo de BLE en Flutter.  
 - [permission_handler](https://pub.dev/packages/permission_handler) – Manejo de permisos en Android/iOS.  
+- [shared_preferences](https://pub.dev/packages/shared_preferences) – Almacenamiento local simple.  
 - [dart:async](https://api.flutter.dev/flutter/dart-async/) – Librería oficial de Dart para programación asíncrona y streams.
+- [dart:convert](https://dart.dev/libraries/dart-convert) – Librería oficial de Dart para conversión de datos (UTF8, JSON, etc).
+- [dart:io](https://api.dart.dev/stable/dart-io/dart-io-library.html) – Librería oficial de Dart para operaciones de entrada/salida.
+- [dart:math](https://dart.dev/libraries/dart-math) – Librería oficial de Dart para operaciones matemáticas.
+- 
 
 ## 🚀 Estado del proyecto
 Actualmente en etapa de **prototipado**:  
