@@ -13,17 +13,20 @@ Con un **toque**, el amuleto permite registrar una crisis, indicando en la app:
 
 La aplicación organiza esta información en un calendario y la traduce en un **espacio visual vivo**, inspirado en los jardines: su crecimiento continuo, sus ciclos de apertura y recogimiento, y su imperfección natural.  
 
-## Stack tecnológico
+## 🛠️ Stack tecnológico
 
-Estamos usando:
+Estamos usando:  
 
-- ESP32-C3 super mini 
+- [ESP32-C3 Super Mini](https://es.aliexpress.com/item/1005007205044247.html)  
+- [ESP-IDF / documentación oficial](https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/index.html)  
+- Arduino IDE 2.0 para prototipado inicial.  
+- [Flutter](https://flutter.dev/) para la app móvil.
 
-<https://docs.espressif.com/projects/esp-idf/en/stable/esp32c3/get-started/index.html>
-
-<https://es.aliexpress.com/item/1005007205044247.html>
-
-- Resistencia de presión FSR
+Sensores y componentes en exploración:  
+- Botón físico.  
+- Sensor capacitivo (touch).  
+- Resistencia de presión (FSR), usada en modo binario y para rangos de dolor.  
+- Motor vibrador (feedback háptico).  
 
 ## Instalación para desarrollar
 
