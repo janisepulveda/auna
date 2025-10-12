@@ -1,17 +1,29 @@
-// crisis_detail_screen.dart
+// lib/crisis_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'user_provider.dart';
 
 class CrisisDetailScreen extends StatefulWidget {
   const CrisisDetailScreen({super.key});
 
   @override
-  _CrisisDetailScreenState createState() => _CrisisDetailScreenState();
+  // aquí quitamos el guion bajo
+  CrisisDetailScreenState createState() => CrisisDetailScreenState();
 }
 
-class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
-  double _intensity = 5.0; // Valor inicial para la intensidad
-  final TextEditingController _durationController = TextEditingController(text: '15');
+// y aquí también quitamos el guion bajo
+class CrisisDetailScreenState extends State<CrisisDetailScreen> {
+  double _intensity = 5.0;
+  final TextEditingController _durationController =
+      TextEditingController(text: '15');
   final TextEditingController _notesController = TextEditingController();
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,13 +36,12 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
         ),
       ),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), // Para ocultar el teclado al tocar fuera
+        onTap: () => FocusScope.of(context).unfocus(),
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Selector de intensidad
               _buildSectionTitle('Intensidad'),
               Slider(
                 value: _intensity,
@@ -46,9 +57,8 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 activeColor: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-              
-              // Duración
-              _buildSectionTitle('Duración (segundos)'),
+
+              _buildSectionTitle('Duración (minutos)'),
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
@@ -57,25 +67,26 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              
-              // Notas
+
               _buildSectionTitle('Notas'),
               TextField(
                 controller: _notesController,
                 maxLines: 4,
                 decoration: const InputDecoration(
-                  hintText: 'Añade cualquier detalle que consideres importante.',
+                  hintText:
+                      'Añade cualquier detalle que consideres importante.',
                 ),
               ),
               const SizedBox(height: 40),
-              
-              // Botón de Guardar
+
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    // Aquí iría la lógica para guardar los datos
-                    Navigator.of(context).pop(); // Regresa a la pantalla anterior
+                    Provider.of<UserProvider>(context, listen: false)
+                        .registerCrisis();
+
+                    Navigator.of(context).pop();
                   },
                   child: const Text('Guardar Registro'),
                 ),
@@ -87,7 +98,6 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     );
   }
 
-  // Helper para los títulos de sección
   Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -96,12 +106,5 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _durationController.dispose();
-    _notesController.dispose();
-    super.dispose();
   }
 }

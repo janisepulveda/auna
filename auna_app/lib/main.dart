@@ -1,15 +1,15 @@
-// main.dart
+// lib/main.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // <-- 1. importa el paquete provider
+import 'package:provider/provider.dart';
 import 'login_screen.dart';
-import 'user_provider.dart'; // <-- 2. importa tu archivo user_provider
+import 'user_provider.dart';
 
 void main() {
-  // 3. envuelve la aplicación con el changenotifierprovider
+  // envolvemos toda la aplicación con el provider para que esté disponible en todas las pantallas.
   runApp(
     ChangeNotifierProvider(
-      create: (context) => UserProvider(), // esto crea una única instancia de tu "tablero"
-      child: const MyApp(), // ahora myapp y todas las pantallas dentro de ella pueden acceder a los datos del usuario
+      create: (context) => UserProvider(),
+      child: const MyApp(),
     ),
   );
 }
@@ -19,11 +19,10 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // el resto de tu código aquí no necesita ningún cambio.
     return MaterialApp(
       title: 'Auna',
       theme: ThemeData(
-        // ... tu tema ...
+        // tu tema visual personalizado.
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
         colorScheme: ColorScheme.fromSeed(
@@ -59,7 +58,7 @@ class MyApp extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
         )),
       ),
-      home: const LoginScreen(),
+      home: const LoginScreen(), // la app empieza en la pantalla de login.
       debugShowCheckedModeBanner: false,
     );
   }

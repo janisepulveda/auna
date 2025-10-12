@@ -18,11 +18,16 @@ class UserProvider with ChangeNotifier {
   // una forma pública de obtener los datos del usuario.
   UserData? get user => _user;
 
+  // 1. añadimos un contador para las crisis, inicializado en 0.
+  int _crisisCount = 0;
+
+  // 2. creamos una forma pública de leer el contador.
+  int get crisisCount => _crisisCount;
+
   // una función para "iniciar sesión".
   // recibe los datos, los guarda y notifica a todos los que estén escuchando.
   void login(String name, String email) {
     _user = UserData(name: name, email: email);
-    // esta es la parte más importante: avisa a la app que los datos cambiaron.
     notifyListeners();
   }
 
@@ -30,5 +35,11 @@ class UserProvider with ChangeNotifier {
   void logout() {
     _user = null;
     notifyListeners();
+  }
+
+  // 3. creamos una nueva función para cuando se registra una crisis.
+  void registerCrisis() {
+    _crisisCount++; // incrementa el contador.
+    notifyListeners(); // notifica a la app que algo cambió para que la pantalla se redibuje.
   }
 }
