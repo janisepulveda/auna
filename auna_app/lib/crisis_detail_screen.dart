@@ -7,11 +7,9 @@ class CrisisDetailScreen extends StatefulWidget {
   const CrisisDetailScreen({super.key});
 
   @override
-  // aquí quitamos el guion bajo
   CrisisDetailScreenState createState() => CrisisDetailScreenState();
 }
 
-// y aquí también quitamos el guion bajo
 class CrisisDetailScreenState extends State<CrisisDetailScreen> {
   double _intensity = 5.0;
   final TextEditingController _durationController =
@@ -57,7 +55,6 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 activeColor: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-
               _buildSectionTitle('Duración (minutos)'),
               TextField(
                 controller: _durationController,
@@ -67,7 +64,6 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               _buildSectionTitle('Notas'),
               TextField(
                 controller: _notesController,
@@ -78,14 +74,23 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Provider.of<UserProvider>(context, listen: false)
-                        .registerCrisis();
+                    // 1. leemos los valores de los campos.
+                    final duration = int.tryParse(_durationController.text) ?? 0;
+                    final notes = _notesController.text;
 
+                    // 2. llamamos al provider con todos los detalles que ahora requiere.
+                    Provider.of<UserProvider>(context, listen: false)
+                        .registerCrisis(
+                      intensity: _intensity,
+                      duration: duration,
+                      notes: notes,
+                    );
+
+                    // 3. cerramos la pantalla.
                     Navigator.of(context).pop();
                   },
                   child: const Text('Guardar Registro'),
