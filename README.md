@@ -16,31 +16,21 @@ Con un **toque**, el amuleto permite registrar una crisis, indicando en la app:
 
 La aplicación organiza esta información en un calendario y la traduce en un **espacio visual vivo**, inspirado en los jardines: su crecimiento continuo, sus ciclos de apertura y recogimiento, y su imperfección natural.  
 
+Onboarding:
 ```mermaid
-flowchart TD
-    A["¿Hay episodio de dolor?"] -- Sí --> B["Usuario presiona amuleto"]
-    A -- No --> C["No hacer nada"]
-    B --> D["Amuleto envía evento a la app"]
-    D --> E["Feedback análogo: vibración"] & F["App recibe evento"]
-    F --> G["Registra fecha y hora"]
-    G --> H["Actualiza calendario"]
-    H --> I["Envía estado al espacio visual"]
-    I --> J["Transforma datos en metáfora visual"]
-    J --> K["Flor abierta = registraste crisis<br>"]
-    K --> L["Usuario ve historial + jardín"]
-
-    style A stroke:#FFCDD2
-    style B stroke:#FFCDD2
-    style C stroke:#FFCDD2
-    style D stroke:#FFCDD2
-    style E stroke:#FFCDD2
-    style F stroke:#FFCDD2
-    style G stroke:#FFCDD2
-    style H stroke:#FFCDD2
-    style I stroke:#FFCDD2
-    style J stroke:#FFCDD2
-    style K stroke:#FFCDD2
-    style L stroke:#FFCDD2
+graph TD
+    A("Inicio: Tienda de Apps") --> B["Usuario descarga AUNA"];
+    B --> C["Abre la App"];
+    C --> D{"Pantalla de Bienvenida <br> (Login / Crear Cuenta)"};
+    D -- "Inicia Sesión" --> E["Pantalla de Login"];
+    E --> F("Usuario ingresa sus datos");
+    F --> G["App solicita Permisos <br> (Bluetooth, Notificaciones)"];
+    G --> H("Usuario acepta permisos");
+    H --> I["Pantalla: 'Conecta tu amuleto'"];
+    I --> J(("Acción Física: <br> Usuario presiona el amuleto"));
+    J --> K{"App detecta señal"};
+    K --> L["Pantalla de Éxito <br> '¡Amuleto Conectado!'"];
+    L --> M("Fin: Usuario en Pantalla Home");
 ```
 
 ## 🛠️ Stack tecnológico
