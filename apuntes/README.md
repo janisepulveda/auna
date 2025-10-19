@@ -1,10 +1,13 @@
 # Diagramas de Flujo de la App AUNA
 
-Este documento contiene los flujos de usuario principales para la aplicación AUNA, que ayuda a registrar episodios de dolor a través de un dispositivo complementario (amuleto).
+Este documento describe los flujos de usuario principales de **AUNA**, una aplicación diseñada para registrar episodios de dolor mediante un dispositivo complementario (amuleto). Los diagramas a continuación ilustran los pasos desde el inicio de la app hasta la gestión de episodios de dolor.
 
-1. Flujo de Onboarding
+---
 
-Este flujo describe el proceso desde que un usuario descarga la app por primera vez hasta que conecta su amuleto y llega a la pantalla de inicio (Home), listo para usar.
+## 1. Flujo de Onboarding
+
+Este flujo muestra el proceso que sigue un usuario desde que descarga la aplicación hasta que conecta su amuleto y llega a la pantalla de inicio (Home).
+
 ```mermaid
 graph TD
     A("Inicio: Tienda de Apps") --> B["Usuario descarga AUNA"];
@@ -21,7 +24,7 @@ graph TD
     L --> M("Fin: Usuario en Pantalla Home");
 ```
 
-2. Flujo de Registro de Episodio de Dolor
+## 2. Flujo de Registro de Episodio de Dolor
 
 Este diagrama muestra cómo la aplicación registra un episodio de dolor cuando el usuario presiona el amuleto, incluso si la app está en segundo plano.
 ```mermaid
