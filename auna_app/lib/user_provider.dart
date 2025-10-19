@@ -1,64 +1,45 @@
 // lib/user_provider.dart
 import 'package:flutter/material.dart';
 
-// Clase para los datos del usuario
+// una clase simple para guardar los datos del usuario.
 class UserData {
   final String name;
   final String email;
+
   UserData({required this.name, required this.email});
 }
 
-// ¡Nuevo! Una clase para guardar los datos de cada crisis
-class CrisisModel {
-  final DateTime date;
-  final double intensity;
-  final int duration;
-  final String notes;
-
-  CrisisModel({
-    required this.date,
-    required this.intensity,
-    required this.duration,
-    required this.notes,
-  });
-}
-
+// esta es la clase principal que manejará el estado.
+// 'changenotifier' permite que "notifique" a los widgets cuando hay un cambio.
 class UserProvider with ChangeNotifier {
+  // guardamos los datos del usuario de forma privada.
   UserData? _user;
+
+  // una forma pública de obtener los datos del usuario.
   UserData? get user => _user;
 
-  // Ahora guardamos una lista detallada de crisis
-  final List<CrisisModel> _registeredCrises = [];
-  List<CrisisModel> get registeredCrises => _registeredCrises;
+  // 1. añadimos un contador para las crisis, inicializado en 0.
+  int _crisisCount = 0;
 
-  // El contador de flores sigue funcionando, ahora basado en el largo de la lista
-  int get crisisCount => _registeredCrises.length;
+  // 2. creamos una forma pública de leer el contador.
+  int get crisisCount => _crisisCount;
 
+  // una función para "iniciar sesión".
+  // recibe los datos, los guarda y notifica a todos los que estén escuchando.
   void login(String name, String email) {
     _user = UserData(name: name, email: email);
     notifyListeners();
   }
 
+  // una función para "cerrar sesión".
   void logout() {
     _user = null;
-    _registeredCrises.clear(); // Limpiamos la lista al cerrar sesión
     notifyListeners();
   }
 
-  // ¡Función mejorada! Ahora acepta todos los detalles de la crisis
-  void registerCrisis({
-    required double intensity,
-    required int duration,
-    required String notes,
-  }) {
-    _registeredCrises.add(
-      CrisisModel(
-        date: DateTime.now(), // Guarda la fecha y hora exactas
-        intensity: intensity,
-        duration: duration,
-        notes: notes,
-      ),
-    );
-    notifyListeners();
+  // 3. creamos una nueva función para cuando se registra una crisis.
+  void registerCrisis() {
+    _crisisCount++; // incrementa el contador.
+    notifyListeners(); // notifica a la app que algo cambió para que la pantalla se redibuje.
   }
 }
