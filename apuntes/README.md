@@ -1,4 +1,4 @@
-# esta carpeta contiene los diagramas de flujo de la app
+# Diagramas de flujo de la app
 
 Onboarding:
 ```mermaid
