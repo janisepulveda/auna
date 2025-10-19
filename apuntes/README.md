@@ -1,6 +1,10 @@
-# Diagramas de flujo de la app
+# Diagramas de Flujo de la App AUNA
 
-Onboarding:
+Este documento contiene los flujos de usuario principales para la aplicación AUNA, que ayuda a registrar episodios de dolor a través de un dispositivo complementario (amuleto).
+
+1. Flujo de Onboarding
+
+Este flujo describe el proceso desde que un usuario descarga la app por primera vez hasta que conecta su amuleto y llega a la pantalla de inicio (Home), listo para usar.
 ```mermaid
 graph TD
     A("Inicio: Tienda de Apps") --> B["Usuario descarga AUNA"];
@@ -16,20 +20,26 @@ graph TD
     K --> L["Pantalla de Éxito <br> '¡Amuleto Conectado!'"];
     L --> M("Fin: Usuario en Pantalla Home");
 ```
-Registro del episodio de dolor:
+
+2. Flujo de Registro de Episodio de Dolor
+
+Este diagrama muestra cómo la aplicación registra un episodio de dolor cuando el usuario presiona el amuleto, incluso si la app está en segundo plano.
 ```mermaid
 flowchart TD
     A(("Contexto: <br> Usuario siente dolor")) --> B(("Acción Física: <br> Usuario presiona el amuleto"))
     B --> C{"Amuleto envía señal <br> (Bluetooth)"}
     C --> D{"App recibe la señal <br> (Incluso en segundo plano)"}
-    D --> E@{ label: "Sistema muestra Notificación / Pop-up <br> '¿Quieres añadir detalles?'" }
+    D --> E["Sistema muestra Notificación / Pop-up <br> '¿Quieres añadir detalles?'"]
     E --> F{"Usuario decide..."}
-    F -- Sí, añadir --> G["Se abre App en Pantalla de Detalles <br> (Intensidad, Duración, Notas)"]
-    G --> H@{ label: "Usuario presiona 'Guardar'" }
+    F -- "Sí, añadir" --> G["Se abre App en Pantalla de Detalles <br> (Intensidad, Duración, Notas)"]
+    G --> H("Usuario presiona 'Guardar'")
     H --> I("Fin: Registro completo guardado en Historial")
-    F -- Ahora no --> J["Notificación se cierra"]
-    J --> K("Fin: Registro básico <br> (hora/fecha, intensidad) guardado")
-
-    E@{ shape: rect}
-    H@{ shape: rounded}
+    F -- "Ahora no" --> J["Notificación se cierra"]
+    J --> K("Fin: Registro básico <br> (hora/fecha) guardado")
 ```
+
+Consideraciones Adicionales
+
+Flujos Pendientes: Sería útil diagramar otros flujos como la visualización del historial de dolor, la configuración de perfil y la gestión de permisos.
+
+Manejo de Errores: Se deben considerar los casos de error, como la falla en la conexión Bluetooth o la pérdida de señal del amuleto.
