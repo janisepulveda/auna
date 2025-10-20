@@ -3,8 +3,39 @@
 Este documento describe los flujos de usuario principales de **AUNA**, una aplicación diseñada para registrar episodios de dolor mediante un dispositivo complementario (amuleto). Los diagramas a continuación ilustran los pasos desde el inicio de la app hasta la gestión de episodios de dolor.
 
 ---
+## 1. Arquitectura de la información
 
-## 1. Flujo de Onboarding
+Todas las pantallas que existen y cómo están conectadas entre sí.
+```mermaid
+graph TD
+    %% El Nivel 0 son las pantallas de Onboarding
+    A("Inicio") --> B{¿Usuario tiene sesión?};
+    B -- No --> C["Flujo de Onboarding <br> (Login / Crear Cuenta)"];
+    B -- Sí --> D["Navegación Principal (Tab Bar)"];
+
+    %% El Nivel 1 son las 3 pestañas principales que mostraste
+    D --> E["Home (Flores de Loto)"];
+    D --> F["Historial (Calendario)"];
+    D --> G["Ajustes (Perfil)"];
+
+    %% El Nivel 2 son las pantallas que salen de las principales
+    
+    %% Desde Home
+    E -- "Presiona '+'" --> H["Pantalla: Detalle de Crisis"];
+    %% Vuelve a Home
+    H -- "Guardar" --> E;
+
+    %% Desde Historial
+    F -- "Selecciona un día" --> I["Pantalla: Detalles del Día"];
+    %% Vuelve al Calendario
+    I --> F;
+
+    %% Desde Ajustes
+    G --> J["Pantalla: Conectar Amuleto"];
+    G --> K["Pantalla: Contacto de Emergencia"];
+    G --> L["Pantalla: Exportar Historial"];
+```
+## 2. Flujo de Onboarding
 
 Este flujo muestra el proceso que sigue un usuario desde que descarga la aplicación hasta que conecta su amuleto y llega a la pantalla de inicio (Home).
 
@@ -24,7 +55,7 @@ graph TD
     L --> M("Fin: Usuario en Pantalla Home");
 ```
 
-## 2. Flujo de Registro de Episodio de Dolor
+## 3. Flujo de Registro de Episodio de Dolor
 
 Este diagrama muestra cómo la aplicación registra un episodio de dolor cuando el usuario presiona el amuleto, incluso si la app está en segundo plano.
 ```mermaid
@@ -40,7 +71,28 @@ flowchart TD
     F -- "Ahora no" --> J["Notificación se cierra"]
     J --> K("Fin: Registro básico <br> (hora/fecha) guardado")
 ```
+## 4. Flujo de registro manual
 
+Este diagrama muestra cómo el usuario registra un episodio de dolor de forma manual en caso de no tener el amuleto.
+```mermaid
+flowchart TD
+    A("Inicio: Pantalla Home") --> B@{ label: "Usuario presiona 'Registrar Episodio de Dolor'" }
+    B --> C@{ label: "Abre Pantalla 'Detalle del Episodio'" }
+    C --> D@{ label: "Usuario ajusta 'Intensidad'" }
+    D --> E@{ label: "Usuario ajusta 'Fecha y Hora'" }
+    E --> F@{ label: "Usuario ingresa 'Duración'" }
+    F --> G@{ label: "Usuario escribe 'Notas'" }
+    G --> H@{ label: "Usuario presiona 'Guardar Registro'" }
+    H --> I("Fin: App regresa a Home")
+
+    B@{ shape: rect}
+    C@{ shape: rect}
+    D@{ shape: rect}
+    E@{ shape: rect}
+    F@{ shape: rect}
+    G@{ shape: rect}
+    H@{ shape: rect}
+```
 Consideraciones Adicionales
 
 Flujos Pendientes: Sería útil diagramar otros flujos como la visualización del historial de dolor, la configuración de perfil y la gestión de permisos.
