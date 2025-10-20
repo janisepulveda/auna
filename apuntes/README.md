@@ -7,7 +7,7 @@ Este documento describe los flujos de usuario principales de **AUNA**, una aplic
 
 Todas las pantallas que existen y cómo están conectadas entre sí.
 ```mermaid
-graph TD
+graph LR
     %% El Nivel 0 son las pantallas de Onboarding
     A("Inicio") --> B{¿Usuario tiene sesión?};
     B -- No --> C["Flujo de Onboarding <br> (Login / Crear Cuenta)"];
@@ -40,7 +40,7 @@ graph TD
 Este flujo muestra el proceso que sigue un usuario desde que descarga la aplicación hasta que conecta su amuleto y llega a la pantalla de inicio (Home).
 
 ```mermaid
-graph TD
+graph LR
     A("Inicio: Tienda de Apps") --> B["Usuario descarga AUNA"];
     B --> C["Abre la App"];
     C --> D{"Pantalla de Bienvenida <br> (Login / Crear Cuenta)"};
@@ -59,7 +59,7 @@ graph TD
 
 Este diagrama muestra cómo la aplicación registra un episodio de dolor cuando el usuario presiona el amuleto, incluso si la app está en segundo plano.
 ```mermaid
-flowchart TD
+flowchart LR
     A(("Contexto: <br> Usuario siente dolor")) --> B(("Acción Física: <br> Usuario presiona el amuleto"))
     B --> C{"Amuleto envía señal <br> (Bluetooth)"}
     C --> D{"App recibe la señal <br> (Incluso en segundo plano)"}
@@ -75,7 +75,7 @@ flowchart TD
 
 Este diagrama muestra cómo el usuario registra un episodio de dolor de forma manual en caso de no tener el amuleto.
 ```mermaid
-flowchart TD
+flowchart LR
     A("Inicio: Pantalla Home") --> B@{ label: "Usuario presiona 'Registrar Episodio de Dolor'" }
     B --> C@{ label: "Abre Pantalla 'Detalle del Episodio'" }
     C --> D@{ label: "Usuario ajusta 'Intensidad'" }
