@@ -106,9 +106,10 @@ En el proyecto usamos las siguientes bibliotecas y referencias:
 Actualmente en etapa de **prototipado**:
 
 - Servidor BLE básico en ESP32-C3 funcionando.  
-- Conexión establecida desde Flutter (Android/iOS).  
-- Próximos pasos: enviar valores reales de sensores (botón, capacitivo, FSR) en lugar de texto fijo.  
-- Prototipos físicos en **impresión 3D** explorando distintos formatos: broche, collar y pulsera.  
+- Conexión establecida desde Flutter (Android/iOS).
+- Envía valores reales del sensor FSR 
+- Próximos pasos: desarrollar la pantalla de inicio y calendario
+- Prototipos físicos en **impresión 3D** explorando distintos formatos de anlaje para el broche: imán, clip, prendedor.
 
 ## Comentarios
 
