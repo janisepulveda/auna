@@ -3,7 +3,7 @@
 Este documento describe los flujos de usuario principales de **AUNA**, una aplicación diseñada para registrar episodios de dolor mediante un dispositivo complementario (amuleto). Los diagramas a continuación ilustran los pasos desde el inicio de la app hasta la gestión de episodios de dolor.
 
 ---
-## 1. Arquitectura de la información
+## 1. Sistema de Organización y Navegación
 
 Todas las pantallas que existen y cómo están conectadas entre sí.
 ```mermaid
