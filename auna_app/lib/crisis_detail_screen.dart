@@ -1,17 +1,15 @@
 // lib/crisis_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'user_provider.dart';
+import 'user_provider.dart'; // Asegúrate de que este import esté presente
 
 class CrisisDetailScreen extends StatefulWidget {
   const CrisisDetailScreen({super.key});
 
   @override
-  // aquí quitamos el guion bajo
   CrisisDetailScreenState createState() => CrisisDetailScreenState();
 }
 
-// y aquí también quitamos el guion bajo
 class CrisisDetailScreenState extends State<CrisisDetailScreen> {
   double _intensity = 5.0;
   final TextEditingController _durationController =
@@ -57,8 +55,7 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 activeColor: Theme.of(context).colorScheme.primary,
               ),
               const SizedBox(height: 24),
-
-              _buildSectionTitle('Duración (minutos)'),
+              _buildSectionTitle('Duración (segundos)'),
               TextField(
                 controller: _durationController,
                 keyboardType: TextInputType.number,
@@ -67,7 +64,6 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-
               _buildSectionTitle('Notas'),
               TextField(
                 controller: _notesController,
@@ -78,14 +74,23 @@ class CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ),
               ),
               const SizedBox(height: 40),
-
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
-                    Provider.of<UserProvider>(context, listen: false)
-                        .registerCrisis();
+                    // 1. Leemos los valores de los campos
+                    final duration = int.tryParse(_durationController.text) ?? 0;
+                    final notes = _notesController.text;
 
+                    // 2. ¡Llamamos a registerCrisis con los parámetros requeridos!
+                    Provider.of<UserProvider>(context, listen: false)
+                        .registerCrisis(
+                      intensity: _intensity, // Pasa la intensidad
+                      duration: duration,    // Pasa la duración
+                      notes: notes,        // Pasa las notas
+                    );
+
+                    // 3. Cerramos la pantalla
                     Navigator.of(context).pop();
                   },
                   child: const Text('Guardar Registro'),
