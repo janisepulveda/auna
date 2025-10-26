@@ -150,7 +150,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
                 const SizedBox(height: 4),
-                Text('${crisis.duration} min'),
+                Text('${crisis.duration} segundos'),
               ],
             ),
             const Spacer(),
