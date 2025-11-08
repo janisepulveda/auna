@@ -306,7 +306,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           pw.Paragraph(text: 'Generado el: ${DateFormat.yMMMMd('es_CL').add_Hm().format(DateTime.now())}', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey)),
           pw.SizedBox(height: 20),
           pw.TableHelper.fromTextArray( // Usamos TableHelper
-            headers: ['Fecha', 'Hora', 'Intensidad', 'Duración (min)', 'Notas'],
+            headers: ['Fecha', 'Hora', 'Intensidad', 'Duración (seg)', 'Notas'],
             data: crises.map((crisis) => [
               dateFormatter.format(crisis.date), timeFormatter.format(crisis.date),
               crisis.intensity.toInt().toString(), crisis.duration.toString(),
