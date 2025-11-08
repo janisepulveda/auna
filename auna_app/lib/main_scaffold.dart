@@ -1,6 +1,7 @@
 // lib/main_scaffold.dart
 import 'package:flutter/material.dart';
-import 'package:bubble_bottom_bar/bubble_bottom_bar.dart'; // <-- 1. Importa el paquete correcto
+import 'dart:ui'; // Para el ImageFilter
+import 'package:google_nav_bar/google_nav_bar.dart'; // <-- 1. Importa el nuevo paquete
 import 'home_screen.dart';
 import 'history_screen.dart';
 import 'settings_screen.dart';
@@ -21,74 +22,80 @@ class _MainScaffoldState extends State<MainScaffold> {
     SettingsScreen(),
   ];
 
-  // Tu color rosado
+  // Definimos tu color rosado personalizado
   final Color customSelectedColor = const Color(0xFFFFADAD);
-  // Color para íconos no seleccionados (el azul oscuro de tu tema)
-  final Color customIconColor = const Color(0xFF333A56);
+  // Color para los íconos no seleccionados (usamos el primario de tu tema)
+  final Color customIconColor = const Color(0xFF333A56); 
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // IMPORTANTE: Quitamos 'extendBody: true'
-      // Esta barra necesita un fondo sólido
+      extendBody: true, // Mantenemos esto para el efecto "liquid glass"
       body: Center(
         child: _widgetOptions.elementAt(_selectedIndex),
       ),
       
       // --- REEMPLAZAMOS EL BOTTOMNAVIGATIONBAR ---
-      bottomNavigationBar: BubbleBottomBar(
-        backgroundColor: Colors.white, // Fondo blanco sólido
-        elevation: 8, // Sombra para que "flote"
-        opacity: 1, // Sin transparencias
-        
-        currentIndex: _selectedIndex,
-        onTap: (index) {
-          if (index != null) { // El paquete puede devolver null
-            setState(() {
-              _selectedIndex = index;
-            });
-          }
-        },
-        
-        // --- Definición de las pestañas (Items) ---
-        items: <BubbleBottomBarItem>[
-          BubbleBottomBarItem(
-            backgroundColor: customSelectedColor, // El color de la "burbuja"
-            icon: Icon(
-              Icons.home_outlined,
-              color: customIconColor, // Color del ícono inactivo
+      bottomNavigationBar: ClipRect(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+          child: Container(
+            // El contenedor de vidrio que ya tenías
+            decoration: BoxDecoration(
+              color: const Color(0xCCFFFFFF), // Blanco ~80% opacidad
+              border: Border(
+                top: BorderSide(
+                  color: const Color(0x4DFFFFFF), // Blanco 30%
+                  width: 0.5,
+                ),
+              ),
             ),
-            activeIcon: const Icon(
-              Icons.home,
-              color: Colors.white, // Color del ícono activo (dentro de la burbuja)
+            // SafeArea para evitar que los íconos queden debajo de la barra de inicio
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8.0),
+                child: GNav(
+                  // --- ESTILO DE GNAV ---
+                  rippleColor: customSelectedColor.withAlpha(50), // Color del "splash"
+                  hoverColor: customSelectedColor.withAlpha(30),  // Color al pasar el mouse
+                  gap: 8, // Espacio entre ícono y texto
+                  activeColor: Colors.white, // Color del texto e ícono DENTRO de la cápsula
+                  iconSize: 24,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Padding de la cápsula
+                  duration: const Duration(milliseconds: 300), // Velocidad de la animación
+                  
+                  // ¡LA MAGIA! Define el color de la cápsula deslizante
+                  tabBackgroundColor: customSelectedColor, 
+                  
+                  // Color de los íconos NO seleccionados
+                  color: customIconColor, 
+                  
+                  // Definición de las pestañas
+                  tabs: const [
+                    GButton(
+                      icon: Icons.home_outlined,
+                      text: 'Inicio',
+                    ),
+                    GButton(
+                      icon: Icons.calendar_today_outlined,
+                      text: 'Historial',
+                    ),
+                    GButton(
+                      icon: Icons.settings_outlined,
+                      text: 'Configuración',
+                    ),
+                  ],
+                  selectedIndex: _selectedIndex,
+                  onTabChange: (index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                ),
+              ),
             ),
-            title: const Text('Inicio', style: TextStyle(color: Colors.white)),
           ),
-          BubbleBottomBarItem(
-            backgroundColor: customSelectedColor,
-            icon: Icon(
-              Icons.calendar_today_outlined,
-              color: customIconColor,
-            ),
-            activeIcon: const Icon(
-              Icons.calendar_today,
-              color: Colors.white,
-            ),
-            title: const Text('Historial', style: TextStyle(color: Colors.white)),
-          ),
-          BubbleBottomBarItem(
-            backgroundColor: customSelectedColor,
-            icon: Icon(
-              Icons.settings_outlined,
-              color: customIconColor,
-            ),
-            activeIcon: const Icon(
-              Icons.settings,
-              color: Colors.white,
-            ),
-            title: const Text('Configuración', style: TextStyle(color: Colors.white)),
-          ),
-        ],
+        ),
       ),
       // --- FIN DEL REEMPLAZO ---
     );
