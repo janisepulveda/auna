@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'crisis_detail_screen.dart';
 import 'user_provider.dart';
+import 'dart:ui'; // <-- ¡ASEGÚRATE DE QUE ESTE IMPORT ESTÉ AQUÍ!
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,19 +15,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final int totalFlowers = 6;
 
-  // lista de posiciones ajustada para subir las flores
+  // Tu lista de posiciones (con el último ajuste para subirlas)
   final List<Map<String, double>> _flowerPositions = const [
-    // flores de "atrás" (más arriba y pequeñas)
-    {'top': 0.44, 'left': 0.64, 'size': 50.0},
-    {'top': 0.46, 'left': 0.15, 'size': 55.0},
-
-    // flores de en medio
-    {'top': 0.54, 'left': 0.70, 'size': 60.0},
-    {'top': 0.60, 'left': 0.28, 'size': 65.0},
-    
-    // flores de "adelante" (más abajo y grandes)
-    {'top': 0.70, 'left': 0.05, 'size': 70.0},
-    {'top': 0.68, 'left': 0.60, 'size': 75.0},
+    {'top': 0.48, 'left': 0.64, 'size': 50.0},
+    {'top': 0.47, 'left': 0.15, 'size': 55.0},
+    {'top': 0.55, 'left': 0.75, 'size': 60.0},
+    {'top': 0.58, 'left': 0.28, 'size': 65.0},
+    {'top': 0.68, 'left': 0.05, 'size': 70.0},
+    {'top': 0.66, 'left': 0.60, 'size': 75.0},
   ];
 
   String _getBackgroundImage() {
@@ -55,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Image.asset(_getBackgroundImage(), fit: BoxFit.cover),
         
+        // Jardín de flores
         Consumer<UserProvider>(
           builder: (context, userProvider, child) {
             final openFlowersCount = userProvider.crisisCount;
@@ -78,12 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
           },
         ),
         
+        // Interfaz de usuario
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               children: [
                 const SizedBox(height: 20),
+                // Saludo
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     final userName = userProvider.user?.name ?? 'Bienvenida';
@@ -106,20 +105,49 @@ class _HomeScreenState extends State<HomeScreen> {
                 
                 const Spacer(),
 
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.add),
-                  label: const Text('Registrar Crisis'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CrisisDetailScreen()),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    minimumSize: const Size(double.infinity, 50),
+                // Botón "Liquid Glass"
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12.0),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0x26FFFFFF),
+                        borderRadius: BorderRadius.circular(12.0),
+                        border: Border.all(color: const Color(0x33FFFFFF)),
+                      ),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const CrisisDetailScreen()),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12.0),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          width: double.infinity,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: const [
+                              Icon(Icons.add, color: Colors.white),
+                              SizedBox(width: 8),
+                              Text(
+                                'Registrar Crisis',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ),
+                
                 const SizedBox(height: 20),
               ],
             ),
@@ -130,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// FlowerWidget (sin cambios)
 class FlowerWidget extends StatelessWidget {
   final double top;
   final double left;
