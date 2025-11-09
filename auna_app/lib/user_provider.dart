@@ -1,25 +1,29 @@
 // lib/user_provider.dart
 import 'package:flutter/material.dart';
 
-// Clase para los datos del usuario (esta ya la tenías)
+// Clase para los datos del usuario
 class UserData {
   final String name;
   final String email;
   UserData({required this.name, required this.email});
 }
 
-// ¡Añadimos la clase para guardar los datos de cada crisis!
+// ¡CLASE ACTUALIZADA!
 class CrisisModel {
   final DateTime date;
   final double intensity;
   final int duration;
   final String notes;
+  final String trigger; // <-- ¡NUEVO!
+  final List<String> symptoms; // <-- ¡NUEVO!
 
   CrisisModel({
     required this.date,
     required this.intensity,
     required this.duration,
     required this.notes,
+    required this.trigger,    // <-- ¡NUEVO!
+    required this.symptoms, // <-- ¡NUEVO!
   });
 }
 
@@ -27,11 +31,9 @@ class UserProvider with ChangeNotifier {
   UserData? _user;
   UserData? get user => _user;
 
-  // ¡Cambiamos el contador por una lista detallada!
   final List<CrisisModel> _registeredCrises = [];
   List<CrisisModel> get registeredCrises => _registeredCrises;
 
-  // El contador de flores sigue funcionando, basado en la lista.
   int get crisisCount => _registeredCrises.length;
 
   void login(String name, String email) {
@@ -41,22 +43,26 @@ class UserProvider with ChangeNotifier {
 
   void logout() {
     _user = null;
-    _registeredCrises.clear(); // Limpiamos la lista al cerrar sesión
+    _registeredCrises.clear();
     notifyListeners();
   }
 
-  // ¡Función mejorada! Ahora pide y guarda los detalles en la lista.
+  // ¡FUNCIÓN ACTUALIZADA!
   void registerCrisis({
     required double intensity,
     required int duration,
     required String notes,
+    required String trigger,    // <-- ¡NUEVO!
+    required List<String> symptoms, // <-- ¡NUEVO!
   }) {
     _registeredCrises.add(
       CrisisModel(
-        date: DateTime.now(), // Guarda la fecha y hora
+        date: DateTime.now(),
         intensity: intensity,
         duration: duration,
         notes: notes,
+        trigger: trigger,    // <-- ¡NUEVO!
+        symptoms: symptoms, // <-- ¡NUEVO!
       ),
     );
     notifyListeners();
