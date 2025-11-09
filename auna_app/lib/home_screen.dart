@@ -127,9 +127,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 20),
                           width: double.infinity,
-                          child: Row(
+                          child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            children: const [
+                            children: [
                               Icon(Icons.add, color: Colors.white),
                               SizedBox(width: 8),
                               Text(

@@ -271,14 +271,14 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildDivider() {
-    return Row(
+    return const Row(
       children: [
-        const Expanded(child: Divider(thickness: 1, color: Colors.white70)),
+        Expanded(child: Divider(thickness: 1, color: Colors.white70)),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0),
+          padding: EdgeInsets.symmetric(horizontal: 8.0),
           child: Text('O ingresa con', style: TextStyle(color: Colors.white70)),
         ),
-        const Expanded(child: Divider(thickness: 1, color: Colors.white70)),
+        Expanded(child: Divider(thickness: 1, color: Colors.white70)),
       ],
     );
   }
