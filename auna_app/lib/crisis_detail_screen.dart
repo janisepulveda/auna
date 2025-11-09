@@ -90,7 +90,6 @@ class GlassField extends StatelessWidget {
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
-        // ¡todo transparente! sin borde ni fondo del TextField
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade600),
@@ -190,7 +189,7 @@ class GlassChip extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Slider brillante con badge flotante
+// Slider brillante monocromático con badge flotante
 // ------------------------------------------------------------
 class IntensitySlider extends StatelessWidget {
   final double value;
@@ -204,10 +203,6 @@ class IntensitySlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final leve = const Color(0xFFB3CFA3).withValues(alpha: .35);
-    final mod  = const Color(0xFFBAD1DE).withValues(alpha: .35);
-    final sev  = const Color(0xFFF2B0B5).withValues(alpha: .35);
-
     return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
       child: LayoutBuilder(
@@ -224,25 +219,30 @@ class IntensitySlider extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
-                    // fondo brillante segmentado
+                    // Fondo uniforme translúcido
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(999),
-                        child: Row(
-                          children: [
-                            Expanded(child: Container(color: leve)),
-                            Expanded(child: Container(color: mod)),
-                            Expanded(child: Container(color: sev)),
-                          ],
+                        child: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Colors.white.withValues(alpha: .25),
+                                Colors.white.withValues(alpha: .18),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                    // barra deslizante glass
+                    // Slider funcional
                     Positioned.fill(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 12,
-                          activeTrackColor: Colors.white.withValues(alpha: .9),
+                          activeTrackColor: const Color(0xFFF2B0B5).withValues(alpha: .9),
                           inactiveTrackColor: Colors.white.withValues(alpha: .25),
                           thumbColor: const Color(0xFFFFADAD),
                           overlayColor: const Color(0xFFFFADAD).withValues(alpha: .18),
@@ -252,43 +252,46 @@ class IntensitySlider extends StatelessWidget {
                           min: 1,
                           max: 10,
                           divisions: 9,
-                          value: value.clamp(1, 10),
+                          value: (value.clamp(1, 10)).toDouble(),
                           onChanged: onChanged,
                         ),
                       ),
                     ),
-                    // badge brillante
+                    // Badge (sin bloquear gestos)
                     Positioned(
                       left: pos,
                       top: 5,
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white.withValues(alpha: .6), width: 1.3),
-                          gradient: LinearGradient(
-                            colors: [
-                              const Color(0xFFFFADAD).withValues(alpha: .95),
-                              const Color(0xFFF2B0B5).withValues(alpha: .9),
-                            ],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF2B0B5).withValues(alpha: .35),
-                              blurRadius: 16,
-                              offset: const Offset(0, 6),
+                      child: IgnorePointer(
+                        ignoring: true,
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white.withValues(alpha: .6), width: 1.3),
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFFFADAD).withValues(alpha: .95),
+                                const Color(0xFFF2B0B5).withValues(alpha: .9),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
                             ),
-                          ],
-                        ),
-                        child: Text(
-                          '${value.round()}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFF2B0B5).withValues(alpha: .35),
+                                blurRadius: 16,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Text(
+                            '${value.round()}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
                       ),
@@ -297,13 +300,14 @@ class IntensitySlider extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text('Leve', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF38455C))),
-                  Text('Moderado', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF38455C))),
-                  Text('Severo', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF38455C))),
-                ],
+              const Text(
+                'Intensidad del dolor',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF38455C),
+                ),
               ),
             ],
           );
@@ -329,18 +333,16 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
   final _notesController = TextEditingController();
 
   static const _triggers = [
-    'Multitudes', 'Trabajo', 'Social', 'Transporte',
-    'Familia', 'Salud', 'Económico', 'Otro'
+    'Multitudes','Trabajo','Social','Transporte',
+    'Familia','Salud','Económico','Otro'
   ];
 
-  // Lista base
   static const _symptoms = [
     'Taquicardia','Mareo','Sudoración','Temblor','Náuseas',
     'Dolor en el pecho','Miedo intenso','Pánico','Tensión muscular','Ansiedad',
     'Dificultad para respirar','Sensación de irrealidad',
   ];
 
-  // Orden por longitud y alfabético en empates
   List<String> get _symptomsSorted {
     final list = List<String>.from(_symptoms);
     list.sort((a, b) {
@@ -412,7 +414,6 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
               const Text('Duración (segundos)',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
-              // <<< Solo 1 cuadro glass, el input es transparente
               GlassField(
                 controller: _durationController,
                 hint: 'Ej: 15',
@@ -447,7 +448,6 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
               const Text('Notas',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
-              // <<< Solo 1 cuadro glass, el textarea es transparente
               GlassField(
                 controller: _notesController,
                 hint: 'Añade cualquier detalle que consideres importante.',

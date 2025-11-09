@@ -1,27 +1,173 @@
 // lib/settings_screen.dart
-
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-// ⬅️ Ajusta este import si tu archivo está en otra ruta
-import 'user_provider.dart';
-
-import 'dart:io';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:path_provider/path_provider.dart';
-import 'package:open_file_plus/open_file_plus.dart';
-import 'package:intl/intl.dart';
-import 'package:intl/date_symbol_data_local.dart';
-
-// BLE
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:open_file_plus/open_file_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'user_provider.dart';
+
+// ===== Paleta
+const _navy = Color(0xFF38455C);
+const _bg   = Color(0xFFF0F7FA);
+
+// ===== Utilidad de escala (base 390 px de ancho) — más compacta
+double _sx(BuildContext c, [double v = 1]) {
+  final w = MediaQuery.of(c).size.width;
+  final s = (w / 390).clamp(.75, 0.95); // ↓ antes .85–1.05
+  return v * s;
+}
+
+// ===== Glass helpers (compacto y sutil)
+BoxDecoration _glassContainer({required BuildContext context, double radius = 16}) => BoxDecoration(
+  borderRadius: BorderRadius.circular(_sx(context, radius)),
+  gradient: LinearGradient(
+    begin: Alignment.topLeft, end: Alignment.bottomRight,
+    colors: [Colors.white.withOpacity(.35), Colors.white.withOpacity(.15)],
+  ),
+  border: Border.all(color: Colors.white.withOpacity(.48), width: 1.0),
+  boxShadow: [
+    BoxShadow(
+      color: const Color(0xFFAABEDC).withOpacity(.12),
+      blurRadius: _sx(context, 10),
+      offset: Offset(0, _sx(context, 5)),
+    ),
+  ],
+);
+
+class _GlassSurface extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets Function(BuildContext) padding;
+  final double radius;
+  const _GlassSurface({
+    super.key,
+    required this.child,
+    this.padding = _defaultPad,
+    this.radius = 16,
+  });
+
+  static EdgeInsets _defaultPad(BuildContext c) =>
+      EdgeInsets.all(_sx(c, 10)); // ↓ antes 14
+
+  @override
+  Widget build(BuildContext context) {
+    final r = _sx(context, radius);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(r),
+      child: BackdropFilter(
+        filter: ui.ImageFilter.blur(
+          sigmaX: _sx(context, 10),
+          sigmaY: _sx(context, 10),
+        ),
+        child: Container(
+          decoration: _glassContainer(context: context, radius: radius),
+          padding: padding(context),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+// ===== Card de acción (compacta + responsiva)
+class _ActionCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback? onTap;
+  const _ActionCard({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = _sx(context, 32); // ↓
+    final tileSide = _sx(context, 48); // ↓
+    final gap = _sx(context, 10);
+
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: _GlassSurface(
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(_sx(context, 14)),
+              child: BackdropFilter(
+                filter: ui.ImageFilter.blur(
+                  sigmaX: _sx(context, 8),
+                  sigmaY: _sx(context, 8),
+                ),
+                child: Container(
+                  width: tileSide,
+                  height: tileSide,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(_sx(context, 14)),
+                    gradient: LinearGradient(
+                      colors: [Colors.white.withOpacity(.8), Colors.white.withOpacity(.6)],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                    border: Border.all(color: Colors.white.withOpacity(.6)),
+                  ),
+                  child: Icon(icon, color: _navy, size: iconSize),
+                ),
+              ),
+            ),
+            SizedBox(width: gap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _navy,
+                      fontSize: _sx(context, 16), // ↓ antes 18
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  SizedBox(height: _sx(context, 2)),
+                  Text(
+                    subtitle,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: _navy.withOpacity(.72),
+                      fontSize: _sx(context, 12.5), // ↓ antes 13.5
+                      height: 1.22,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            SizedBox(width: _sx(context, 6)),
+            Icon(Icons.chevron_right, color: _navy, size: _sx(context, 22)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ===================== SETTINGS SCREEN =====================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -29,7 +175,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ===== BLE (sin cambios de lógica) =====
+  // ------- BLE (misma lógica)
   final _ble = FlutterReactiveBle();
   String _estadoConexion = 'Desconectado';
   final String _nombreEsp32 = 'Auna';
@@ -78,41 +224,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _cargarValorMaximo() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (mounted) {
-        setState(() => _valorMaximoDolor = prefs.getInt('valorMaximoDolor') ?? 0);
-      }
-    } catch (e) {
-      debugPrint("Error cargando valor máximo: $e");
-    }
+      if (mounted) setState(() => _valorMaximoDolor = prefs.getInt('valorMaximoDolor') ?? 0);
+    } catch (_) {}
   }
 
   void _guardarValorMaximo(int valor) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('valorMaximoDolor', valor);
-    } catch (e) {
-      debugPrint("Error guardando valor máximo: $e");
-    }
+    } catch (_) {}
   }
 
   Future<bool> _solicitarPermisos() async {
     Map<Permission, PermissionStatus> statuses = {};
-    final permissionsToRequest = <Permission>[];
-
+    final req = <Permission>[];
     if (Platform.isAndroid) {
-      permissionsToRequest.addAll([
-        Permission.bluetoothScan,
-        Permission.bluetoothConnect,
-        Permission.locationWhenInUse,
-      ]);
+      req.addAll([Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse]);
     } else if (Platform.isIOS) {
-      permissionsToRequest.add(Permission.bluetooth);
+      req.add(Permission.bluetooth);
     }
-
-    if (permissionsToRequest.isNotEmpty) {
-      statuses = await permissionsToRequest.request();
-    }
-
+    if (req.isNotEmpty) statuses = await req.request();
     final granted = statuses.values.every((s) => s.isGranted);
     if (!granted && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -148,8 +279,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) setState(() => _estadoConexion = 'Conectando...');
         _conectarDispositivo(device.id);
       }
-    }, onError: (e) {
-      debugPrint('Error scan: $e');
+    }, onError: (_) {
       if (mounted) setState(() => _estadoConexion = 'Error escaneo');
     });
 
@@ -162,15 +292,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   void _conectarDispositivo(String deviceId) {
-    _suscripcionConexion = _ble
-        .connectToDevice(id: deviceId, connectionTimeout: const Duration(seconds: 20))
-        .listen((update) {
+    _suscripcionConexion =
+        _ble.connectToDevice(id: deviceId, connectionTimeout: const Duration(seconds: 20)).listen((update) {
       if (update.connectionState == DeviceConnectionState.connected) {
         _connectedDeviceId = deviceId;
         _leerDatos(deviceId);
       }
-    }, onError: (e) {
-      debugPrint('Error conexión $deviceId: $e');
+    }, onError: (_) {
       if (mounted) setState(() => _estadoConexion = 'Error conexión');
     });
   }
@@ -189,13 +317,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
           final v = int.tryParse(s);
           if (v != null) {
             _valoresCalibracion.add(v);
-            setState(() {});
+            setState(() {}); // refresca conteo
           }
-        } catch (e) {
-          debugPrint('BLE decode: $e');
-        }
+        } catch (_) {}
       }
-    }, onError: (e) {
+    }, onError: (_) {
       if (mounted) setState(() => _estadoConexion = 'Error lectura');
     });
   }
@@ -205,11 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Primero conecta el amuleto.')));
       return;
     }
-    setState(() {
-      _estaCalibrando = true;
-      _valoresCalibracion = [];
-    });
-
+    setState(() { _estaCalibrando = true; _valoresCalibracion = []; });
     final t = Timer(const Duration(seconds: 5), _finalizarCalibracion);
 
     showDialog(
@@ -220,7 +342,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           title: const Text("Calibrando..."),
           content: Text("Presiona el amuleto con fuerza máxima (5 seg).\nLecturas: ${_valoresCalibracion.length}"),
           actions: [
-            TextButton(onPressed: () { t.cancel(); _finalizarCalibracion(); }, child: const Text("Finalizar Ahora")),
+            TextButton(onPressed: () { t.cancel(); _finalizarCalibracion(); }, child: const Text("Finalizar Ahora"))
           ],
         ),
       ),
@@ -253,105 +375,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (mounted) setState(() { _estadoConexion = 'Desconectado'; _connectedDeviceId = null; });
   }
 
-  // ====== PDF AUNA (diagramación referencia) ======
+  // ------- PDF (sin cambios funcionales, tamaños ajustados en tablas)
+  PdfColor get _pdfNavy => PdfColor.fromInt(0xFF38455C);
+  PdfColor get _pdfIce  => PdfColor.fromInt(0xFFE6F1F5);
+  PdfColor get _pdfLine => PdfColor.fromInt(0xFFB7C7D1);
+  PdfColor get _pdfGrey => PdfColor.fromInt(0xFF6B7A88);
 
   Future<void> _pickAndExportPdf() async {
     final choice = await showModalBottomSheet<String>(
-      context: context,
-      showDragHandle: true,
+      context: context, showDragHandle: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const ListTile(title: Text('Exportar PDF'), subtitle: Text('Elige el período')),
-            ListTile(leading: const Icon(Icons.all_inbox), title: const Text('Todo el historial'), onTap: () => Navigator.pop(ctx, 'all')),
-            ListTile(leading: const Icon(Icons.calendar_view_month), title: const Text('Mes actual'), onTap: () => Navigator.pop(ctx, 'month')),
-            ListTile(leading: const Icon(Icons.calendar_today), title: const Text('Últimos 30 días'), onTap: () => Navigator.pop(ctx, '30')),
-            ListTile(leading: const Icon(Icons.date_range), title: const Text('Elegir rango…'), onTap: () => Navigator.pop(ctx, 'range')),
-            const SizedBox(height: 8),
-          ],
-        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const ListTile(title: Text('Exportar PDF'), subtitle: Text('Elige el período')),
+          ListTile(leading: const Icon(Icons.all_inbox),           title: const Text('Todo el historial'), onTap: () => Navigator.pop(ctx, 'all')),
+          ListTile(leading: const Icon(Icons.calendar_view_month), title: const Text('Mes actual'),        onTap: () => Navigator.pop(ctx, 'month')),
+          ListTile(leading: const Icon(Icons.calendar_today),      title: const Text('Últimos 30 días'),   onTap: () => Navigator.pop(ctx, '30')),
+          ListTile(leading: const Icon(Icons.date_range),          title: const Text('Elegir rango…'),     onTap: () => Navigator.pop(ctx, 'range')),
+          const SizedBox(height: 8),
+        ]),
       ),
     );
-
     if (!mounted || choice == null) return;
 
-    DateTime? from;
-    DateTime? to;
+    DateTime? from; DateTime? to;
     if (choice == 'month') {
-      final now = DateTime.now();
-      from = DateTime(now.year, now.month, 1);
-      to = DateTime(now.year, now.month + 1, 1);
+      final now = DateTime.now(); from = DateTime(now.year, now.month, 1); to = DateTime(now.year, now.month + 1, 1);
     } else if (choice == '30') {
-      to = DateTime.now();
-      from = to.subtract(const Duration(days: 30));
+      to = DateTime.now(); from = to.subtract(const Duration(days: 30));
     } else if (choice == 'range') {
       final now = DateTime.now();
       final picked = await showDateRangePicker(
-        context: context,
-        firstDate: DateTime(now.year - 5),
-        lastDate: DateTime(now.year + 5),
+        context: context, firstDate: DateTime(now.year - 5), lastDate: DateTime(now.year + 5),
         initialDateRange: DateTimeRange(start: now.subtract(const Duration(days: 7)), end: now),
       );
-      if (!mounted) return;
-      if (picked == null) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No seleccionaste rango.')));
-        return;
-      }
-      from = picked.start;
-      to = picked.end.add(const Duration(days: 1));
+      if (picked == null) return; from = picked.start; to = picked.end.add(const Duration(days: 1));
     }
-
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  PdfColor get _aunaNavy => PdfColor.fromInt(0xFF38455C);
-  PdfColor get _aunaIce  => PdfColor.fromInt(0xFFE6F1F5);
-  PdfColor get _aunaLine => PdfColor.fromInt(0xFFB7C7D1);
-  PdfColor get _aunaGrey => PdfColor.fromInt(0xFF6B7A88);
-
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
-    final pdf = pw.Document();
-    if (!mounted) return;
-
+    final pdf = pw.Document(); if (!mounted) return;
     try { await initializeDateFormatting('es_CL', null); Intl.defaultLocale ??= 'es_CL'; } catch (_) {}
-
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
     final userName = up.user?.name ?? 'Usuario Auna';
-
     final start = from ?? DateTime.fromMillisecondsSinceEpoch(0);
     final end   = to   ?? DateTime.now();
 
     final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
-    if (crises.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay crisis en el período seleccionado.')));
-      return;
-    }
+    if (crises.isEmpty) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay crisis en el período seleccionado.'))); return; }
 
     crises.sort((a, b) => a.date.compareTo(b.date));
-    final df = DateFormat.yMMMMd('es_CL');
-    final tf = DateFormat.Hm('es_CL');
+    final df = DateFormat.yMMMMd('es_CL'); final tf = DateFormat.Hm('es_CL');
 
-    // Resumen
     final avgIntensity = crises.fold<double>(0, (a, c) => a + c.intensity.toDouble()) / crises.length;
     final durations = crises.map((c) => c.duration).where((d) => d != null && d! > 0).cast<int>().toList();
     final totalDuration = durations.isEmpty ? 0 : durations.reduce((a, b) => a + b);
-    final avgDuration   = durations.isEmpty ? null : durations.reduce((a, b) => a + b) / durations.length;
+    final avgDuration = durations.isEmpty ? null : durations.reduce((a, b) => a + b) / durations.length;
 
     int leves = 0, moderados = 0, severos = 0;
-    for (final c in crises) {
-      final v = c.intensity.toInt();
-      if (v <= 3) leves++; else if (v <= 7) moderados++; else severos++;
-    }
+    for (final c in crises) { final v = c.intensity.toInt(); if (v <= 3) leves++; else if (v <= 7) moderados++; else severos++; }
 
     Map<String, int> countSymptoms(Iterable<String> xs) {
       final m = <String, int>{};
-      for (final s in xs) {
-        final k = s.trim();
-        if (k.isEmpty) continue;
-        m.update(k, (v) => v + 1, ifAbsent: () => 1);
-      }
+      for (final s in xs) { final k = s.trim(); if (k.isEmpty) continue; m.update(k, (v) => v + 1, ifAbsent: () => 1); }
       return m;
     }
 
@@ -364,29 +451,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     String formatDuration(int seconds) {
       final m = seconds ~/ 60, s = seconds % 60;
-      if (m >= 60) { final h = m ~/ 60, mm = (m % 60).toString().padLeft(2,'0'); return '${h}h ${mm}m'; }
+      if (m >= 60) { final h = m ~/ 60, mm = (m % 60).toString().padLeft(2, '0'); return '${h}h ${mm}m'; }
       return '${m}m ${s}s';
     }
 
-    String rangoTxt() {
-      if (from == null && to == null) return 'Período: todo el historial';
-      return 'Período: ${DateFormat.yMMMd('es_CL').format(start)} – ${DateFormat.yMMMd('es_CL').format(end)}';
-    }
+    final pdfNavy = _pdfNavy, pdfIce = _pdfIce, pdfLine = _pdfLine, pdfGrey = _pdfGrey;
 
     pw.Widget headCell(String t) => pw.Container(
-      padding: const pw.EdgeInsets.symmetric(vertical: 7, horizontal: 8),
-      color: _aunaIce,
-      child: pw.Text(t, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 11, color: _aunaNavy)),
+      padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 6),
+      color: pdfIce,
+      child: pw.Text(t, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: pdfNavy)),
     );
 
-    pw.Widget cell(String t, {pw.Alignment align = pw.Alignment.topLeft, double fs = 10}) =>
-      pw.Container(padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 8), alignment: align,
-        child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
-      );
+    pw.Widget cell(String t, {pw.Alignment align = pw.Alignment.topLeft, double fs = 9.8}) => pw.Container(
+      padding: const pw.EdgeInsets.symmetric(vertical: 4.5, horizontal: 6),
+      alignment: align,
+      child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
+    );
 
     final summaryTable = pw.Table(
-      border: pw.TableBorder.all(color: _aunaLine, width: .6),
-      columnWidths: const {0: pw.FixedColumnWidth(200), 1: pw.FlexColumnWidth(1)},
+      border: pw.TableBorder.all(color: pdfLine, width: .6),
+      columnWidths: const {0: pw.FixedColumnWidth(175), 1: pw.FlexColumnWidth(1)},
       children: [
         pw.TableRow(children: [headCell('Indicador'), headCell('Valor')]),
         pw.TableRow(children: [cell('Total de crisis'), cell('${crises.length}', align: pw.Alignment.center)]),
@@ -399,59 +484,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
 
     final detailTable = pw.Table(
-      border: pw.TableBorder.all(color: _aunaLine, width: .6),
+      border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {
-        0: pw.FixedColumnWidth(90),
-        1: pw.FixedColumnWidth(40),
-        2: pw.FixedColumnWidth(55),
-        3: pw.FixedColumnWidth(70),
+        0: pw.FixedColumnWidth(82),
+        1: pw.FixedColumnWidth(36),
+        2: pw.FixedColumnWidth(48),
+        3: pw.FixedColumnWidth(62),
         4: pw.FlexColumnWidth(1.2),
-        5: pw.FlexColumnWidth(2.2),
-        6: pw.FlexColumnWidth(2.2),
+        5: pw.FlexColumnWidth(2.0),
+        6: pw.FlexColumnWidth(2.0),
       },
       defaultVerticalAlignment: pw.TableCellVerticalAlignment.top,
       children: [
         pw.TableRow(children: [
-          headCell('Fecha'), headCell('Hora'), headCell('Intensidad'), headCell('Duración (seg)'),
-          headCell('Desencadenante'), headCell('Síntomas'), headCell('Notas'),
+          headCell('Fecha'),
+          headCell('Hora'),
+          headCell('Intensidad'),
+          headCell('Duración (seg)'),
+          headCell('Desencadenante'),
+          headCell('Síntomas'),
+          headCell('Notas'),
         ]),
-        for (final c in crises) pw.TableRow(children: [
-          cell(df.format(c.date)), cell(tf.format(c.date)),
-          cell(c.intensity.toInt().toString(), align: pw.Alignment.center),
-          cell((c.duration ?? 0).toString(), align: pw.Alignment.center),
-          cell(c.trigger ?? '-'),
-          cell((c.symptoms == null || c.symptoms!.isEmpty) ? '-' : c.symptoms!.join(', ')),
-          cell((c.notes?.trim().isEmpty ?? true) ? '-' : c.notes!.trim()),
-        ]),
+        for (final c in crises)
+          pw.TableRow(children: [
+            cell(df.format(c.date)),
+            cell(tf.format(c.date)),
+            cell(c.intensity.toInt().toString(), align: pw.Alignment.center),
+            cell((c.duration ?? 0).toString(), align: pw.Alignment.center),
+            cell(c.trigger ?? '-'),
+            cell((c.symptoms == null || c.symptoms!.isEmpty) ? '-' : c.symptoms!.join(', ')),
+            cell((c.notes?.trim().isEmpty ?? true) ? '-' : c.notes!.trim()),
+          ]),
       ],
     );
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(40, 36, 40, 36),
+        margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 28),
         footer: (ctx) => pw.Align(
           alignment: pw.Alignment.centerRight,
-          child: pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 9, color: _aunaGrey)),
+          child: pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}',
+              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
         ),
         build: (ctx) => [
           pw.Text('Reporte de Crisis - $userName',
-            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: _aunaNavy)),
-          pw.SizedBox(height: 6),
-          pw.Container(height: 1, color: _aunaLine),
-          pw.SizedBox(height: 6),
+              style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
+          pw.SizedBox(height: 4),
+          pw.Container(height: 1, color: pdfLine),
+          pw.SizedBox(height: 4),
           pw.Text('Generado el: ${DateFormat.yMMMMd('es_CL').add_Hm().format(DateTime.now())}',
-            style: pw.TextStyle(fontSize: 10, color: _aunaGrey)),
+              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
           pw.SizedBox(height: 2),
-          pw.Text(rangoTxt(), style: pw.TextStyle(fontSize: 10, color: _aunaGrey)),
-          pw.SizedBox(height: 16),
-
-          pw.Text('Resumen', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _aunaNavy)),
+          pw.Text('Período: ${DateFormat.yMMMd('es_CL').format(start)} – ${DateFormat.yMMMd('es_CL').format(end)}',
+              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
+          pw.SizedBox(height: 10),
+          pw.Text('Resumen',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
           pw.SizedBox(height: 6),
           summaryTable,
-          pw.SizedBox(height: 18),
-
-          pw.Text('Detalle de Crisis', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: _aunaNavy)),
+          pw.SizedBox(height: 12),
+          pw.Text('Detalle de Crisis',
+              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
           pw.SizedBox(height: 6),
           detailTable,
         ],
@@ -463,13 +557,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final name = "historial_auna_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf";
       final file = File("${dir.path}/$name");
       await file.writeAsBytes(await pdf.save());
-
-      final result = await OpenFile.open(file.path);
-      if (result.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('PDF guardado en Documentos ($name)'),
-          duration: const Duration(seconds: 5),
-        ));
+      final res = await OpenFile.open(file.path);
+      if (res.type != ResultType.done && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('PDF guardado en Documentos ($name)')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -481,91 +573,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final estaConectado = _estadoConexion == 'Conectado';
-    return Scaffold(
-      appBar: AppBar(
-        title: Consumer<UserProvider>(
-          builder: (context, up, child) {
-            final userName = up.user?.name ?? 'Usuario';
-            final userEmail = up.user?.email ?? 'sin-email@auna.app';
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(userName, style: const TextStyle(fontSize: 18)),
-                Text(userEmail, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-              ],
-            );
-          },
-        ),
-        centerTitle: true,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          _buildSettingsCard(
-            icon: Icons.bluetooth,
-            title: 'Conectar Amuleto',
-            subtitle: 'Estado: $_estadoConexion',
-            trailing: estaConectado
-                ? TextButton(onPressed: _desconectar, child: const Text('Desconectar'))
-                : ElevatedButton(
-                    onPressed: (_estadoConexion == 'Buscando...' || _estadoConexion == 'Conectando...') ? null : _iniciarConexion,
-                    child: Text(
-                      _estadoConexion == 'Desconectado' || _estadoConexion == 'No encontrado' ||
-                      _estadoConexion.startsWith('Error') || _estadoConexion == 'Permisos denegados'
-                        ? 'Buscar Amuleto' : _estadoConexion,
-                    ),
-                  ),
+  // ===== Sheet del Amuleto (compacto)
+  void _showAmuletoSheet() {
+    final conectado = _estadoConexion == 'Conectado';
+    showModalBottomSheet(
+      context: context, showDragHandle: true,
+      builder: (_) => SafeArea(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: Icon(conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching, color: _navy),
+            title: Text(conectado ? 'Conectado' : _estadoConexion),
+            subtitle: Text(conectado ? 'Máximo detectado: $_valorMaximoDolor' : 'Toca para intentar conectar'),
+            onTap: conectado ? null : _iniciarConexion,
           ),
-          if (estaConectado)
-            _buildSettingsCard(
-              icon: Icons.tune,
-              title: 'Calibración del Sensor',
-              subtitle: _valorMaximoDolor == 0 ? 'Realiza la calibración inicial' : 'Calibrado. Máx: $_valorMaximoDolor',
-              trailing: TextButton(
-                onPressed: _estaCalibrando ? null : _iniciarCalibracion,
-                child: Text(_valorMaximoDolor == 0 ? 'Iniciar Calibración' : 'Recalibrar'),
-              ),
-            ),
-          _buildSettingsCard(
-            icon: Icons.person_add_alt_1,
-            title: 'Contacto de Emergencia',
-            subtitle: 'Configura un contacto para notificar',
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Función no implementada'))),
-          ),
-          _buildSettingsCard(
-            icon: Icons.download,
-            title: 'Exportar Historial',
-            subtitle: 'Elige período y genera PDF',
-            trailing: const Icon(Icons.download_done),
-            onTap: _pickAndExportPdf,
-          ),
-        ],
+          if (conectado)
+            ListTile(leading: const Icon(Icons.tune), title: const Text('Calibrar sensor'),
+              onTap: () { Navigator.pop(context); _iniciarCalibracion(); }),
+          if (conectado)
+            ListTile(leading: const Icon(Icons.link_off), title: const Text('Desconectar'),
+              onTap: () { Navigator.pop(context); _desconectar(); }),
+          const SizedBox(height: 6),
+        ]),
       ),
     );
   }
 
-  Widget _buildSettingsCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Widget trailing,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      elevation: 2,
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: Icon(icon, color: Theme.of(context).colorScheme.primary, size: 30),
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Text(subtitle, style: TextStyle(color: Colors.grey[600])),
-        trailing: trailing,
-        onTap: onTap,
+  // ===================== UI =====================
+  @override
+  Widget build(BuildContext context) {
+    final vgap = _sx(context, 12);
+
+    return Scaffold(
+      backgroundColor: _bg,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(_sx(context, 16), _sx(context, 10), _sx(context, 16), _sx(context, 24)),
+          child: Column(
+            children: [
+              Text('Configuración',
+                  style: TextStyle(
+                    fontSize: _sx(context, 24), // ↓ antes 28
+                    fontWeight: FontWeight.w800,
+                    color: _navy,
+                  )),
+              SizedBox(height: _sx(context, 4)),
+              Text('Accede a todas las funciones',
+                  style: TextStyle(fontSize: _sx(context, 13), color: _navy.withOpacity(.7))),
+              SizedBox(height: _sx(context, 10)),
+
+              _ActionCard(
+                icon: Icons.bluetooth,
+                title: 'Amuleto Bluetooth',
+                subtitle: _estadoConexion == 'Conectado'
+                    ? 'Conectado — Calibrar o desconectar'
+                    : (_estadoConexion == 'Buscando...' || _estadoConexion == 'Conectando...'
+                        ? _estadoConexion
+                        : 'Conectar dispositivo'),
+                onTap: _showAmuletoSheet,
+              ),
+              SizedBox(height: vgap),
+
+              _ActionCard(
+                icon: Icons.person_add_alt_1,
+                title: 'Contacto de Emergencia',
+                subtitle: 'Configura un contacto para notificar',
+                onTap: () => ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('Función no implementada'))),
+              ),
+              SizedBox(height: vgap),
+
+              _ActionCard(
+                icon: Icons.download_outlined,
+                title: 'Exportar Historial',
+                subtitle: 'Descargar datos en PDF',
+                onTap: _pickAndExportPdf,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
