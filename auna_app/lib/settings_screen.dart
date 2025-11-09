@@ -3,7 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:ui' as ui;
+import 'dart:ui' as ui; // Renombramos para evitar conflicto
 
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
@@ -18,33 +18,34 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'user_provider.dart';
+import 'notification_service.dart'; // <-- ¡IMPORTA EL SERVICIO DE NOTIFICACIÓN!
 
 // ===== Paleta
 const _navy = Color(0xFF38455C);
 const _bg   = Color(0xFFF0F7FA);
 
-// ===== Utilidad de escala (base 390 px de ancho) — más compacta
+// ===== Utilidad de escala
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
   final s = (w / 390).clamp(.75, 0.95);
   return v * s;
 }
 
-// ===== Glass helpers (compacto y sutil)
+// ===== Glass helpers (Corregido con .withOpacity())
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
   borderRadius: BorderRadius.circular(_sx(context, 16)),
   gradient: LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
     colors: [
-      Colors.white.withValues(alpha: .35),
-      Colors.white.withValues(alpha: .15),
+      Colors.white.withOpacity(0.35), // Ajustado desde .15
+      Colors.white.withOpacity(0.15),
     ],
   ),
-  border: Border.all(color: Colors.white.withValues(alpha: .48), width: 1.0),
+  border: Border.all(color: Colors.white.withOpacity(0.48), width: 1.0),
   boxShadow: [
     BoxShadow(
-      color: const Color(0xFFAABEDC).withValues(alpha: .12),
+      color: const Color(0xFFAABEDC).withOpacity(0.12),
       blurRadius: _sx(context, 10),
       offset: Offset(0, _sx(context, 5)),
     ),
@@ -77,7 +78,7 @@ class _GlassSurface extends StatelessWidget {
   }
 }
 
-// ===== Card de acción (compacta + responsiva)
+// ===== Card de acción (Corregido con .withOpacity())
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -116,13 +117,13 @@ class _ActionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(_sx(context, 14)),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: .8),
-                        Colors.white.withValues(alpha: .6),
+                        Colors.white.withOpacity(0.8),
+                        Colors.white.withOpacity(0.6),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(color: Colors.white.withValues(alpha: .6)),
+                    border: Border.all(color: Colors.white.withOpacity(0.6)),
                   ),
                   child: Icon(icon, color: _navy, size: iconSize),
                 ),
@@ -149,7 +150,7 @@ class _ActionCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _navy.withValues(alpha: .72),
+                      color: _navy.withOpacity(0.72),
                       fontSize: _sx(context, 12.5),
                       height: 1.22,
                     ),
@@ -158,7 +159,7 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: _sx(context, 6)),
-            Icon(Icons.chevron_right, color: _navy, size: _sx(context, 22)),
+            Icon(Icons.chevron_right, color: _navy.withOpacity(0.7), size: _sx(context, 22)),
           ],
         ),
       ),
@@ -188,10 +189,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
   StreamSubscription<List<int>>? _suscripcionDatos;
   String? _connectedDeviceId;
 
+  // ¡NUEVO! Control para evitar spam de notificaciones
+  bool _crisisNotificada = false;
+
   @override
   void initState() {
     super.initState();
     _cargarValorMaximo();
+    _ble.connectedDeviceStream.listen((update) {
+       if(!mounted) return;
+       if(update.connectionState == DeviceConnectionState.connected){
+         setState(() {
+           _estadoConexion = 'Conectado';
+           _connectedDeviceId = update.deviceId;
+           _leerDatos(update.deviceId);
+         });
+       } else if (update.connectionState == DeviceConnectionState.disconnected) {
+         if(update.deviceId == _connectedDeviceId) {
+           setState(() {
+             _estadoConexion = 'Desconectado';
+             _connectedDeviceId = null;
+             _suscripcionDatos?.cancel();
+           });
+         }
+       }
+    });
   }
 
   @override
@@ -219,19 +241,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<bool> _solicitarPermisos() async {
-    if (Platform.isIOS) return true; // iOS no requiere permisos explícitos via plugin
-    // Android
-    final req = <Permission>[
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.locationWhenInUse, // compat <= Android 11
-    ];
-    final statuses = await req.request();
-    final granted = statuses.values.every((s) => s.isGranted);
+    Map<Permission, PermissionStatus> statuses = {};
+    List<Permission> permissionsToRequest = [];
+    if (Platform.isAndroid) {
+      permissionsToRequest.addAll([
+          Permission.bluetoothScan, Permission.bluetoothConnect, Permission.locationWhenInUse,
+      ]);
+    } else if (Platform.isIOS) {
+       permissionsToRequest.add(Permission.bluetooth);
+    }
+    if(permissionsToRequest.isNotEmpty) {
+        statuses = await permissionsToRequest.request();
+    }
+    bool granted = statuses.values.every((status) => status.isGranted);
     if (!granted && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Permisos de Bluetooth/Ubicación son necesarios.')),
-      );
+       ScaffoldMessenger.of(context).showSnackBar(
+         const SnackBar(content: Text('Permisos de Bluetooth/Ubicación son necesarios.')),
+       );
     }
     return granted;
   }
@@ -240,26 +266,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _suscripcionEscaneo?.cancel();
     await _suscripcionConexion?.cancel();
     await _suscripcionDatos?.cancel();
-    _suscripcionEscaneo = null;
-    _suscripcionConexion = null;
-    _suscripcionDatos = null;
-
+    _suscripcionEscaneo = null; _suscripcionConexion = null; _suscripcionDatos = null;
     if (!mounted) return;
-
-    setState(() {
-      _estadoConexion = 'Buscando...';
-      _connectedDeviceId = null;
-    });
-
+    setState(() { _estadoConexion = 'Buscando...'; _connectedDeviceId = null; });
     final ok = await _solicitarPermisos();
-    if (!ok) {
-      if (mounted) setState(() => _estadoConexion = 'Permisos denegados');
-      return;
-    }
-
+    if (!ok) { if (mounted) setState(() => _estadoConexion = 'Permisos denegados'); return; }
+    
     bool found = false;
-
-    // 1) Intento por servicio (más preciso)
     _suscripcionEscaneo = _ble.scanForDevices(withServices: [_uuidServicio]).listen((device) {
       if (device.name == _nombreEsp32) {
         found = true;
@@ -267,11 +280,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
         if (mounted) setState(() => _estadoConexion = 'Conectando...');
         _conectarDispositivo(device.id);
       }
-    }, onError: (_) {
-      if (mounted) setState(() => _estadoConexion = 'Error escaneo');
-    });
+    }, onError: (_) { if (mounted) setState(() => _estadoConexion = 'Error escaneo'); });
 
-    // 2) Fallback: si a los 8s no encontró por servicio, probar por nombre
     Future.delayed(const Duration(seconds: 8), () async {
       if (!mounted || found) return;
       await _suscripcionEscaneo?.cancel();
@@ -282,12 +292,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
           if (mounted) setState(() => _estadoConexion = 'Conectando...');
           _conectarDispositivo(device.id);
         }
-      }, onError: (_) {
-        if (mounted) setState(() => _estadoConexion = 'Error escaneo');
-      });
+      }, onError: (_) { if (mounted) setState(() => _estadoConexion = 'Error escaneo'); });
     });
 
-    // 3) Timeout total
     Future.delayed(const Duration(seconds: 20), () {
       if (mounted && !found && _estadoConexion == 'Buscando...') {
         _suscripcionEscaneo?.cancel();
@@ -331,6 +338,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
+  // --- ¡FUNCIÓN _leerDatos ACTUALIZADA CON LÓGICA DE NOTIFICACIÓN! ---
   void _leerDatos(String deviceId) {
     final ch = QualifiedCharacteristic(
       serviceId: _uuidServicio,
@@ -339,21 +347,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     _suscripcionDatos?.cancel();
     _suscripcionDatos = _ble.subscribeToCharacteristic(ch).listen((data) {
-      if (_estaCalibrando && mounted) {
-        try {
-          final s = utf8.decode(data);
-          final v = int.tryParse(s);
-          if (v != null) {
-            _valoresCalibracion.add(v);
-            setState(() {}); // refrescar contador en el diálogo
-          }
-        } catch (_) {}
+      if (!mounted) return;
+      
+      int? valorCrudo;
+      try {
+        final s = utf8.decode(data);
+        valorCrudo = int.tryParse(s);
+      } catch (_) { return; } // Error decodificando, ignora el paquete
+
+      if (valorCrudo == null) return; // Dato no es número, ignora
+
+      // Lógica de Calibración
+      if (_estaCalibrando) {
+        _valoresCalibracion.add(valorCrudo);
+        setState(() {}); // refrescar contador en el diálogo
+      }
+      // Lógica de Detección de Crisis
+      else {
+        // Umbral: 80% del máximo calibrado
+        if (_valorMaximoDolor == 0) return; // No puede detectar si no está calibrado
+        double umbral = _valorMaximoDolor * 0.8; 
+
+        // Si supera el umbral Y no hemos notificado ya
+        if (valorCrudo > umbral && !_crisisNotificada) {
+          debugPrint('¡Crisis detectada por BLE! Valor: $valorCrudo');
+          setState(() {
+            _crisisNotificada = true; // Marca como notificada
+          });
+
+          // 1. Registra una crisis preliminar (vacía)
+          final newCrisis = Provider.of<UserProvider>(context, listen: false)
+              .registerCrisis(
+            intensity: 0, // Preliminar
+            duration: 0, // Preliminar
+            notes: "Detectada automáticamente por el amuleto.",
+            trigger: "Otro", // Default
+            symptoms: [], // Vacío
+          );
+
+          // 2. Muestra la notificación con el ID de la crisis
+          NotificationService().showCrisisNotification(newCrisis);
+
+          // 3. Resetea el flag después de un tiempo (ej. 3 minutos)
+          Future.delayed(const Duration(minutes: 3), () {
+            if(mounted) setState(() => _crisisNotificada = false);
+          });
+        }
       }
     }, onError: (_) {
       if (mounted) setState(() => _estadoConexion = 'Error lectura');
     });
   }
 
+  // --- ¡FUNCIÓN _iniciarCalibracion CORREGIDA! ---
   void _iniciarCalibracion() {
     if (_estadoConexion != 'Conectado') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -365,27 +411,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _estaCalibrando = true;
       _valoresCalibracion = [];
     });
-    final t = Timer(const Duration(seconds: 5), _finalizarCalibracion);
+    final t = Timer(const Duration(seconds: 5), () {
+      if (_estaCalibrando && mounted) {
+        _finalizarCalibracion(isManual: false);
+      }
+    });
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => StatefulBuilder(
-        builder: (_, __) => AlertDialog(
-          title: const Text("Calibrando..."),
-          content: Text(
-            "Presiona el amuleto con fuerza máxima (5 seg).\nLecturas: ${_valoresCalibracion.length}",
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                t.cancel();
-                _finalizarCalibracion();
-              },
-              child: const Text("Finalizar Ahora"),
-            ),
-          ],
-        ),
+      builder: (_) => StatefulBuilder( // Usamos StatefulBuilder para actualizar solo el diálogo
+        builder: (context, setDialogState) {
+           // Hacemos que _leerDatos (con su setState) actualice este diálogo
+           // Para forzarlo, podemos hacer un truco
+           void updateDialog() {
+             if(_estaCalibrando && mounted) {
+                setDialogState(() {});
+             }
+           }
+           // Volvemos a atachar el listener (esto es un poco hacky pero funciona)
+           _suscripcionDatos?.onData((_) => updateDialog());
+
+           return AlertDialog(
+              title: const Text("Calibrando..."),
+              content: Text(
+                "Presiona el amuleto con fuerza máxima (5 seg).\nLecturas: ${_valoresCalibracion.length}",
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    t.cancel();
+                    _finalizarCalibracion(isManual: true);
+                  },
+                  child: const Text("Finalizar Ahora"),
+                ),
+              ],
+           );
+        }
       ),
     ).then((_) {
       t.cancel();
@@ -395,9 +457,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
   }
 
-  void _finalizarCalibracion() {
-    final nav = Navigator.of(context, rootNavigator: true);
-    if (nav.canPop()) nav.pop();
+  void _finalizarCalibracion({bool isManual = false}) {
+    if (!isManual && Navigator.of(context, rootNavigator: true).canPop()) {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
     if (!_estaCalibrando || !mounted) return;
 
     setState(() => _estaCalibrando = false);
@@ -441,7 +504,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   PdfColor get _pdfGrey => const PdfColor.fromInt(0xFF6B7A88);
 
   Future<void> _pickAndExportPdf() async {
-    // Usar siempre el ctx local del builder, no guardar context
     final choice = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -449,30 +511,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const ListTile(
-              title: Text('Exportar PDF'),
-              subtitle: Text('Elige el período'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.all_inbox),
-              title: const Text('Todo el historial'),
-              onTap: () => Navigator.of(ctx).pop('all'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_view_month),
-              title: const Text('Mes actual'),
-              onTap: () => Navigator.of(ctx).pop('month'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Últimos 30 días'),
-              onTap: () => Navigator.of(ctx).pop('30'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.date_range),
-              title: const Text('Elegir rango…'),
-              onTap: () => Navigator.of(ctx).pop('range'),
-            ),
+            const ListTile( title: Text('Exportar PDF'), subtitle: Text('Elige el período'), ),
+            ListTile( leading: const Icon(Icons.all_inbox), title: const Text('Todo el historial'), onTap: () => Navigator.of(ctx).pop('all'), ),
+            ListTile( leading: const Icon(Icons.calendar_view_month), title: const Text('Mes actual'), onTap: () => Navigator.of(ctx).pop('month'), ),
+            ListTile( leading: const Icon(Icons.calendar_today), title: const Text('Últimos 30 días'), onTap: () => Navigator.of(ctx).pop('30'), ),
+            ListTile( leading: const Icon(Icons.date_range), title: const Text('Elegir rango…'), onTap: () => Navigator.of(ctx).pop('range'), ),
             const SizedBox(height: 8),
           ],
         ),
@@ -482,7 +525,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     DateTime? from;
     DateTime? to;
-
     if (choice == 'month') {
       final now = DateTime.now();
       from = DateTime(now.year, now.month, 1);
@@ -491,34 +533,29 @@ class _SettingsScreenState extends State<SettingsScreen> {
       to = DateTime.now();
       from = to.subtract(const Duration(days: 30));
     } else if (choice == 'range') {
-      if (!mounted) return; // guardamos el uso de context
+      if (!mounted) return;
       final now = DateTime.now();
       final picked = await showDateRangePicker(
         context: context,
         firstDate: DateTime(now.year - 5),
         lastDate: DateTime(now.year + 5),
-        initialDateRange: DateTimeRange(
-          start: now.subtract(const Duration(days: 7)),
-          end: now,
-        ),
+        initialDateRange: DateTimeRange( start: now.subtract(const Duration(days: 7)), end: now, ),
       );
       if (picked == null) return;
       from = picked.start;
       to = picked.end.add(const Duration(days: 1));
     }
-
     await _exportHistoryToPdf(from: from, to: to);
   }
 
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
     if (!mounted) return;
-
     try {
       await initializeDateFormatting('es_CL', null);
       Intl.defaultLocale ??= 'es_CL';
     } catch (_) {}
-    if (!mounted) return; // <- check extra tras el await para evitar warning
+    if (!mounted) return;
 
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
@@ -529,41 +566,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
     if (crises.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No hay crisis en el período seleccionado.')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar( const SnackBar(content: Text('No hay crisis en el período seleccionado.')), );
       return;
     }
-
     crises.sort((a, b) => a.date.compareTo(b.date));
     final df = DateFormat.yMMMMd('es_CL');
     final tf = DateFormat.Hm('es_CL');
-
     final totalIntensity = crises.fold<double>(0, (a, c) => a + c.intensity.toDouble());
     final avgIntensity = totalIntensity / crises.length;
-
-    // si duration es no-nula en tu modelo, esto evita null checks redundantes:
-    final durations = crises
-        .map((c) => c.duration)
-        .whereType<int>()        // si es int no-nulo, igual pasa
-        .where((d) => d > 0)
-        .toList();
-
+    final durations = crises.map((c) => c.duration).whereType<int>().where((d) => d > 0).toList();
     final totalDuration = durations.isEmpty ? 0 : durations.reduce((a, b) => a + b);
     final double? avgDuration = durations.isEmpty ? null : totalDuration / durations.length;
-
     int leves = 0, moderados = 0, severos = 0;
     for (final c in crises) {
       final v = c.intensity.toInt();
-      if (v <= 3) {
-        leves++;
-      } else if (v <= 7) {
-        moderados++;
-      } else {
-        severos++;
-      }
+      if (v <= 3) leves++;
+      else if (v <= 7) moderados++;
+      else severos++;
     }
-
     Map<String, int> countSymptoms(Iterable<String> xs) {
       final m = <String, int>{};
       for (final s in xs) {
@@ -573,17 +593,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       return m;
     }
-
-    final symptomsCounts = countSymptoms(
-      crises.expand((c) => (c.symptoms)),
-    );
-
+    final symptomsCounts = countSymptoms(crises.expand((c) => c.symptoms));
     String symptomsSummary(Map<String, int> map, {int take = 6}) {
       if (map.isEmpty) return '-';
       final ord = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
       return ord.take(take).map((e) => '• ${e.key}: ${e.value}').join('\n');
     }
-
     String formatDuration(int seconds) {
       final m = seconds ~/ 60;
       final s = seconds % 60;
@@ -594,29 +609,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
       return '${m}m ${s}s';
     }
-
     final pdfNavy = _pdfNavy, pdfIce = _pdfIce, pdfLine = _pdfLine, pdfGrey = _pdfGrey;
-
     pw.Widget headCell(String t) => pw.Container(
       padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 6),
       color: pdfIce,
-      child: pw.Text(
-        t,
-        style: pw.TextStyle(
-          fontWeight: pw.FontWeight.bold,
-          fontSize: 10,
-          color: pdfNavy,
-        ),
-      ),
+      child: pw.Text(t, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: pdfNavy)),
     );
-
     pw.Widget cell(String t, {pw.Alignment align = pw.Alignment.topLeft, double fs = 9.8}) =>
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 4.5, horizontal: 6),
           alignment: align,
           child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
         );
-
     final summaryTable = pw.Table(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {0: pw.FixedColumnWidth(175), 1: pw.FlexColumnWidth(1)},
@@ -630,76 +634,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
         pw.TableRow(children: [cell('Síntomas más frecuentes'), cell(symptomsSummary(symptomsCounts))]),
       ],
     );
-
-    final detailTable = pw.Table(
+    // --- CORREGIDO: Usar TableHelper ---
+    final detailTable = pw.TableHelper.fromTextArray(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(82),
-        1: pw.FixedColumnWidth(36),
-        2: pw.FixedColumnWidth(48),
-        3: pw.FixedColumnWidth(62),
-        4: pw.FlexColumnWidth(1.2),
-        5: pw.FlexColumnWidth(2.0),
-        6: pw.FlexColumnWidth(2.0),
-      },
-      defaultVerticalAlignment: pw.TableCellVerticalAlignment.top,
-      children: [
-        pw.TableRow(children: [
-          headCell('Fecha'),
-          headCell('Hora'),
-          headCell('Intensidad'),
-          headCell('Duración (seg)'),
-          headCell('Desencadenante'),
-          headCell('Síntomas'),
-          headCell('Notas'),
-        ]),
-        for (final c in crises)
-          pw.TableRow(children: [
-            cell(df.format(c.date)),
-            cell(tf.format(c.date)),
-            cell(c.intensity.toInt().toString(), align: pw.Alignment.center),
-            cell(c.duration.toString(), align: pw.Alignment.center), // <- sin ?? 0
-            cell((c.trigger).isEmpty ? '-' : (c.trigger)), // tolerante si en tu modelo es null
-            // síntomas (asumiendo lista no-nula o vacía)
-            cell(c.symptoms.isEmpty ? '-' : c.symptoms.join(', ')),
-            // notas (tolerante si es nullable en tu modelo)
-            cell(() {
-              final n = c.notes;
-              final t = n.trim();
-              return t.isEmpty ? '-' : t;
-            }()),
-          ]),
-      ],
+      columnWidths: const { 0: pw.FixedColumnWidth(82), 1: pw.FixedColumnWidth(36), 2: pw.FixedColumnWidth(48), 3: pw.FixedColumnWidth(62), 4: pw.FlexColumnWidth(1.2), 5: pw.FlexColumnWidth(2.0), 6: pw.FlexColumnWidth(2.0), },
+      cellStyle: const pw.TextStyle(fontSize: 9.8),
+      cellAlignments: { 0: pw.Alignment.topLeft, 1: pw.Alignment.topLeft, 2: pw.Alignment.center, 3: pw.Alignment.center, 4: pw.Alignment.topLeft, 5: pw.Alignment.topLeft, 6: pw.Alignment.topLeft, },
+      headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: pdfNavy),
+      headerCellDecoration: pw.BoxDecoration(color: pdfIce),
+      headers: ['Fecha', 'Hora', 'Intensidad', 'Duración (seg)', 'Desencadenante', 'Síntomas', 'Notas'],
+      data: crises.map((c) => [
+          df.format(c.date),
+          tf.format(c.date),
+          c.intensity.toInt().toString(),
+          c.duration.toString(),
+          c.trigger.isEmpty ? '-' : c.trigger,
+          c.symptoms.isEmpty ? '-' : c.symptoms.join(', '),
+          c.notes.trim().isEmpty ? '-' : c.notes.trim(),
+      ]).toList(),
     );
-
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 28),
         footer: (ctx) => pw.Align(
           alignment: pw.Alignment.centerRight,
-          child: pw.Text(
-            'Página ${ctx.pageNumber} de ${ctx.pagesCount}',
-            style: pw.TextStyle(fontSize: 9, color: pdfGrey),
-          ),
+          child: pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
         ),
         build: (ctx) => [
-          pw.Text(
-            'Reporte de Crisis - $userName',
-            style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: pdfNavy),
-          ),
+          pw.Text('Reporte de Crisis - $userName', style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
+          pw.SizedBox(height: 4), pw.Container(height: 1, color: pdfLine),
           pw.SizedBox(height: 4),
-          pw.Container(height: 1, color: pdfLine),
-          pw.SizedBox(height: 4),
-          pw.Text(
-            'Generado el: ${DateFormat.yMMMMd('es_CL').add_Hm().format(DateTime.now())}',
-            style: pw.TextStyle(fontSize: 9, color: pdfGrey),
-          ),
-          pw.SizedBox(height: 2),
-          pw.Text(
-            'Período: ${DateFormat.yMMMd('es_CL').format(start)} – ${DateFormat.yMMMd('es_CL').format(end)}',
-            style: pw.TextStyle(fontSize: 9, color: pdfGrey),
-          ),
+          pw.Text('Generado el: ${DateFormat.yMMMMd('es_CL').add_Hm().format(DateTime.now())}', style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
+          pw.Text('Período: ${DateFormat.yMMMd('es_CL').format(start)} – ${DateFormat.yMMMd('es_CL').format(end.subtract(const Duration(days: 1)))}', style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
           pw.SizedBox(height: 10),
           pw.Text('Resumen', style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
           pw.SizedBox(height: 6),
@@ -711,7 +678,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-
     try {
       final dir = await getApplicationDocumentsDirectory();
       final name = "historial_auna_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf";
@@ -719,16 +685,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await file.writeAsBytes(await pdf.save());
       final res = await OpenFile.open(file.path);
       if (res.type != ResultType.done && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('PDF guardado en Documentos ($name)')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar( SnackBar(content: Text('PDF guardado en Documentos ($name)')), );
       }
     } catch (e) {
       if (mounted) {
         final msg = e.toString();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error exportando PDF: ${msg.length > 100 ? msg.substring(0, 100) : msg}')),
-        );
+        ScaffoldMessenger.of(context).showSnackBar( SnackBar(content: Text('Error exportando PDF: ${msg.length > 100 ? msg.substring(0, 100) : msg}')), );
       }
     }
   }
@@ -739,6 +701,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
+      backgroundColor: _bg, // Fondo del sheet
       builder: (_) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -804,7 +767,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Accede a todas las funciones',
                 style: TextStyle(
                   fontSize: _sx(context, 13),
-                  color: _navy.withValues(alpha: .7),
+                  color: _navy.withOpacity(0.7), // Corregido .withValues
                 ),
               ),
               SizedBox(height: _sx(context, 10)),

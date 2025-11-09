@@ -3,9 +3,20 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'login_screen.dart';
 import 'user_provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'notification_service.dart'; // <-- ¡Importa el servicio!
 
-void main() {
-  // envolvemos toda la aplicación con el provider para que esté disponible en todas las pantallas.
+// Hacemos que main() sea async
+void main() async {
+  // Asegura que Flutter esté inicializado
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializa el servicio de notificaciones
+  await NotificationService().init(); 
+  
+  // Inicializa el formato de fecha para español
+  await initializeDateFormatting('es_CL', null);
+  
   runApp(
     ChangeNotifierProvider(
       create: (context) => UserProvider(),
@@ -21,8 +32,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Auna',
+      // ¡Le damos la "llave" global a MaterialApp!
+      navigatorKey: navigatorKey, 
       theme: ThemeData(
-        // tu tema visual personalizado.
+        // ... (tu tema sin cambios) ...
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
         colorScheme: ColorScheme.fromSeed(
@@ -58,7 +71,7 @@ class MyApp extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 16),
         )),
       ),
-      home: const LoginScreen(), // la app empieza en la pantalla de login.
+      home: const LoginScreen(),
       debugShowCheckedModeBanner: false,
     );
   }

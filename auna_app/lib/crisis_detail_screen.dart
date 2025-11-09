@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import 'user_provider.dart';
 
 // ------------------------------------------------------------
-// Glass brillante tipo iOS (sin AppBar)
+// Glass brillante (Corregido con .withOpacity())
 // ------------------------------------------------------------
 class Glass {
   static BoxDecoration bright({
@@ -15,18 +15,18 @@ class Glass {
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.white.withValues(alpha: borderAlpha), width: 1.2),
+      border: Border.all(color: Colors.white.withOpacity(borderAlpha), width: 1.2),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withValues(alpha: fillAlpha + .1),
-          Colors.white.withValues(alpha: fillAlpha),
+          Colors.white.withOpacity(fillAlpha + .1),
+          Colors.white.withOpacity(fillAlpha),
         ],
       ),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFAABEDC).withValues(alpha: .25),
+          color: const Color(0xFFAABEDC).withOpacity(0.25),
           blurRadius: 28,
           offset: const Offset(0, 10),
         ),
@@ -66,7 +66,7 @@ class GlassCard extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Campo de texto sobre glass (sin “caja interna” gris)
+// Campo de texto sobre glass
 // ------------------------------------------------------------
 class GlassField extends StatelessWidget {
   final TextEditingController controller;
@@ -110,7 +110,7 @@ class GlassField extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Chip brillante tipo glass luminoso
+// Chip brillante (Corregido con .withOpacity())
 // ------------------------------------------------------------
 class GlassChip extends StatelessWidget {
   final String label;
@@ -141,27 +141,27 @@ class GlassChip extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 60),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: .6), width: 1.2),
+              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.2),
               gradient: selected
                   ? LinearGradient(
                       colors: [
-                        accent.withValues(alpha: .9),
-                        const Color(0xFFF2B0B5).withValues(alpha: .85),
+                        accent.withOpacity(0.9),
+                        const Color(0xFFF2B0B5).withOpacity(0.85),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: .38),
-                        Colors.white.withValues(alpha: .22),
+                        Colors.white.withOpacity(0.38),
+                        Colors.white.withOpacity(0.22),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
               boxShadow: [
                 BoxShadow(
-                  color: (selected ? accent : const Color(0xFFAABEDC)).withValues(alpha: .22),
+                  color: (selected ? accent : const Color(0xFFAABEDC)).withOpacity(0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -176,7 +176,7 @@ class GlassChip extends StatelessWidget {
                 overflow: TextOverflow.visible,
                 style: TextStyle(
                   height: 1.2,
-                  color: selected ? Colors.white : textBase.withValues(alpha: .95),
+                  color: selected ? Colors.white : textBase.withOpacity(0.95),
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
@@ -189,7 +189,7 @@ class GlassChip extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Slider brillante monocromático con badge flotante
+// Slider brillante (Corregido con .withOpacity())
 // ------------------------------------------------------------
 class IntensitySlider extends StatelessWidget {
   final double value;
@@ -219,7 +219,6 @@ class IntensitySlider extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
-                    // Fondo uniforme translúcido
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(999),
@@ -227,8 +226,8 @@ class IntensitySlider extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Colors.white.withValues(alpha: .25),
-                                Colors.white.withValues(alpha: .18),
+                                Colors.white.withOpacity(0.25),
+                                Colors.white.withOpacity(0.18),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -237,15 +236,14 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Slider funcional
                     Positioned.fill(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 12,
-                          activeTrackColor: const Color(0xFFF2B0B5).withValues(alpha: .9),
-                          inactiveTrackColor: Colors.white.withValues(alpha: .25),
+                          activeTrackColor: const Color(0xFFF2B0B5).withOpacity(0.9),
+                          inactiveTrackColor: Colors.white.withOpacity(0.25),
                           thumbColor: const Color(0xFFFFADAD),
-                          overlayColor: const Color(0xFFFFADAD).withValues(alpha: .18),
+                          overlayColor: const Color(0xFFFFADAD).withOpacity(0.18),
                           showValueIndicator: ShowValueIndicator.never,
                         ),
                         child: Slider(
@@ -257,7 +255,6 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
-                    // Badge (sin bloquear gestos)
                     Positioned(
                       left: pos,
                       top: 5,
@@ -269,18 +266,18 @@ class IntensitySlider extends StatelessWidget {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withValues(alpha: .6), width: 1.3),
+                            border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.3),
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFFFFADAD).withValues(alpha: .95),
-                                const Color(0xFFF2B0B5).withValues(alpha: .9),
+                                const Color(0xFFFFADAD).withOpacity(0.95),
+                                const Color(0xFFF2B0B5).withOpacity(0.9),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF2B0B5).withValues(alpha: .35),
+                                color: const Color(0xFFF2B0B5).withOpacity(0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
@@ -318,10 +315,13 @@ class IntensitySlider extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Pantalla Detalle de Crisis (sin AppBar)
+// Pantalla Detalle de Crisis (ACTUALIZADA PARA EDICIÓN)
 // ------------------------------------------------------------
 class CrisisDetailScreen extends StatefulWidget {
-  const CrisisDetailScreen({super.key});
+  // --- ¡NUEVO! Acepta una crisis opcional para editar ---
+  final CrisisModel? crisisToEdit;
+  
+  const CrisisDetailScreen({super.key, this.crisisToEdit});
 
   @override
   State<CrisisDetailScreen> createState() => _CrisisDetailScreenState();
@@ -332,17 +332,9 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
   final _durationController = TextEditingController(text: '15');
   final _notesController = TextEditingController();
 
-  static const _triggers = [
-    'Multitudes','Trabajo','Social','Transporte',
-    'Familia','Salud','Económico','Otro'
-  ];
-
-  static const _symptoms = [
-    'Taquicardia','Mareo','Sudoración','Temblor','Náuseas',
-    'Dolor en el pecho','Miedo intenso','Pánico','Tensión muscular','Ansiedad',
-    'Dificultad para respirar','Sensación de irrealidad',
-  ];
-
+  static const _triggers = [ 'Multitudes','Trabajo','Social','Transporte', 'Familia','Salud','Económico','Otro' ];
+  static const _symptoms = [ 'Taquicardia','Mareo','Sudoración','Temblor','Náuseas', 'Dolor en el pecho','Miedo intenso','Pánico','Tensión muscular','Ansiedad', 'Dificultad para respirar','Sensación de irrealidad', ];
+  
   List<String> get _symptomsSorted {
     final list = List<String>.from(_symptoms);
     list.sort((a, b) {
@@ -351,10 +343,35 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     });
     return list;
   }
-
   String? _selectedTrigger;
   final _selectedSymptoms = <String>{};
 
+  // --- ¡NUEVO! Variable para saber si estamos editando ---
+  bool _isEditing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // --- ¡NUEVO! Llenamos los campos si estamos editando ---
+    if (widget.crisisToEdit != null) {
+      _isEditing = true;
+      final crisis = widget.crisisToEdit!;
+      _intensity = crisis.intensity;
+      _durationController.text = crisis.duration.toString();
+      _notesController.text = crisis.notes;
+      _selectedTrigger = crisis.trigger;
+      _selectedSymptoms.addAll(crisis.symptoms);
+    }
+  }
+
+  @override
+  void dispose() {
+    _durationController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  // --- ¡FUNCIÓN _guardar ACTUALIZADA! ---
   void _guardar() {
     final dur = int.tryParse(_durationController.text) ?? 0;
     if (_selectedTrigger == null) {
@@ -363,13 +380,27 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
       );
       return;
     }
-    Provider.of<UserProvider>(context, listen: false).registerCrisis(
-      intensity: _intensity,
-      duration: dur,
-      notes: _notesController.text,
-      trigger: _selectedTrigger!,
-      symptoms: _selectedSymptoms.toList(),
-    );
+
+    if (_isEditing) {
+      // Si estamos editando, llamamos a 'updateCrisis'
+      Provider.of<UserProvider>(context, listen: false).updateCrisis(
+        id: widget.crisisToEdit!.id, // Pasamos el ID
+        intensity: _intensity,
+        duration: dur,
+        notes: _notesController.text,
+        trigger: _selectedTrigger!,
+        symptoms: _selectedSymptoms.toList(),
+      );
+    } else {
+      // Si es nueva, llamamos a 'registerCrisis'
+      Provider.of<UserProvider>(context, listen: false).registerCrisis(
+        intensity: _intensity,
+        duration: dur,
+        notes: _notesController.text,
+        trigger: _selectedTrigger!,
+        symptoms: _selectedSymptoms.toList(),
+      );
+    }
     Navigator.of(context).pop();
   }
 
@@ -397,15 +428,31 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Detalle de crisis',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF38455C),
-                ),
+              // --- ¡NUEVO! Título dinámico y botón de cerrar ---
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _isEditing ? 'Editar Crisis' : 'Detalle de crisis',
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF38455C),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: const GlassCard(
+                      padding: EdgeInsets.all(10),
+                      radius: 99,
+                      blur: 10,
+                      child: Icon(Icons.close, color: Color(0xFF38455C), size: 18),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
+              // --- FIN CAMBIO ---
 
               const Text('Intensidad',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
@@ -455,6 +502,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
               ),
               const SizedBox(height: 28),
 
+              // --- ¡NUEVO! Botón de Guardar con texto dinámico ---
               GestureDetector(
                 onTap: _guardar,
                 child: GlassCard(
@@ -463,9 +511,9 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
                   child: Container(
                     alignment: Alignment.center,
                     padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: const Text(
-                      'Guardar Registro',
-                      style: TextStyle(
+                    child: Text(
+                      _isEditing ? 'Actualizar Registro' : 'Guardar Registro',
+                      style: const TextStyle(
                         color: Color(0xFF2E3A55),
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
