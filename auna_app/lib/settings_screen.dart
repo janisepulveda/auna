@@ -3,7 +3,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
@@ -16,15 +15,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'user_provider.dart';
 import 'notification_service.dart';
-
-// ===== Modo de lectura BLE =====
-// false = usa SOLO eventos "CRISIS"/"EMERGENCIA" (tu firmware actual)
-// true  = espera también valores numéricos de FSR (aparece calibración/nivel)
-const bool kUseContinuousFSR = false;
+import 'ble_manager.dart'; // <-- usamos el servicio global BLE
 
 // ===== Paleta
 const _navy = Color(0xFF38455C);
@@ -181,404 +175,8 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ------- BLE
-  final _ble = FlutterReactiveBle();
-  String _estadoConexion = 'Desconectado';
-  final String _nombreEsp32 = 'Auna';
+  // ====== PDF helpers (todo lo BLE vive ahora en BleManager) ======
 
-  final Uuid _uuidServicio = Uuid.parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
-  final Uuid _uuidCaracteristica = Uuid.parse("beb5483e-36e1-4688-b7f5-ea07361b26a8");
-
-  StreamSubscription<DiscoveredDevice>? _suscripcionEscaneo;
-  StreamSubscription<ConnectionStateUpdate>? _suscripcionConexion;
-  StreamSubscription<List<int>>? _suscripcionDatos;
-  String? _connectedDeviceId;
-
-  // ------- Calibración / mapeo a nivel 0–10 (se usa sólo si kUseContinuousFSR = true)
-  int _nivelDolor = 0;
-  bool _actividadDetectada = false; // equivalente a "hay presión" si nivel > 0
-  bool _estaCalibrando = false;
-  int _valorMaximoDolor = 0;
-  List<int> _valoresCalibracion = [];
-
-  // anti-spam para notificación automática de "CRISIS"
-  bool _crisisNotificada = false;
-  DateTime _ultimoCrisis = DateTime.fromMillisecondsSinceEpoch(0);
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarValorMaximo();
-  }
-
-  // ====== Persistencia de calibración
-  Future<void> _cargarValorMaximo() async {
-    if (!kUseContinuousFSR) return;
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _valorMaximoDolor = prefs.getInt('valorMaximoDolor') ?? 0;
-    });
-  }
-
-  Future<void> _guardarValorMaximo(int v) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('valorMaximoDolor', v);
-  }
-
-  // ====== Ciclo de vida
-  @override
-  void dispose() {
-    _suscripcionEscaneo?.cancel();
-    _suscripcionConexion?.cancel();
-    _suscripcionDatos?.cancel();
-    super.dispose();
-  }
-
-  // ====== Permisos (Android + chequeo fiable en iOS con BleStatus)
-  Future<bool> _solicitarPermisos() async {
-    try {
-      if (Platform.isAndroid) {
-        final status = await [
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-          Permission.locationWhenInUse, // solo relevante en < Android 12
-        ].request();
-
-        final granted = (status[Permission.bluetoothScan]?.isGranted ?? false) &&
-            (status[Permission.bluetoothConnect]?.isGranted ?? false) &&
-            (status[Permission.locationWhenInUse]?.isGranted ?? true);
-
-        if (!granted && mounted) {
-          setState(() => _estadoConexion = 'Permisos de Bluetooth no concedidos');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Activa Bluetooth (y Ubicación en Android <12).')),
-          );
-        }
-        return granted;
-      } else if (Platform.isIOS) {
-        // En iOS confiamos en el estado de CoreBluetooth via flutter_reactive_ble
-        return await _esperarBleListoIOS();
-      } else {
-        return true;
-      }
-    } catch (e) {
-      if (mounted) setState(() => _estadoConexion = 'Error al solicitar permisos');
-      return false;
-    }
-  }
-
-  Future<bool> _esperarBleListoIOS() async {
-    try {
-      // Estado actual
-      BleStatus current = await _ble.statusStream.first;
-      if (current == BleStatus.ready) return true;
-
-      // Espera hasta 6 s a que pase a READY (si el usuario enciende BT al vuelo)
-      final ready = await _ble.statusStream
-          .timeout(const Duration(seconds: 6))
-          .firstWhere((s) => s == BleStatus.ready, orElse: () => current);
-
-      if (ready == BleStatus.ready) return true;
-
-      if (!mounted) return false;
-      switch (ready) {
-        case BleStatus.poweredOff:
-          setState(() => _estadoConexion = 'Bluetooth apagado');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Enciende Bluetooth en Ajustes o el Centro de Control.')),
-          );
-          break;
-        case BleStatus.unauthorized:
-          setState(() => _estadoConexion = 'Acceso a Bluetooth denegado');
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Ve a Ajustes > Privacidad > Bluetooth y habilita “Auna”.'),
-            ),
-          );
-          break;
-        case BleStatus.unsupported:
-          setState(() => _estadoConexion = 'Bluetooth no soportado en este dispositivo');
-          break;
-        case BleStatus.locationServicesDisabled:
-          setState(() => _estadoConexion = 'Servicios de ubicación deshabilitados');
-          break;
-        default:
-          setState(() => _estadoConexion = 'Bluetooth no disponible');
-          break;
-      }
-      return false;
-    } catch (_) {
-      if (mounted) setState(() => _estadoConexion = 'Bluetooth no disponible');
-      return false;
-    }
-  }
-
-  // ====== Conexión
-  void _iniciarConexion() async {
-    await _suscripcionEscaneo?.cancel();
-    await _suscripcionConexion?.cancel();
-    await _suscripcionDatos?.cancel();
-    _suscripcionEscaneo = null;
-    _suscripcionConexion = null;
-    _suscripcionDatos = null;
-
-    if (!mounted) return;
-    setState(() {
-      _estadoConexion = 'Buscando...';
-      _connectedDeviceId = null;
-    });
-
-    final ok = await _solicitarPermisos();
-    if (!ok) {
-      if (mounted && _estadoConexion == 'Buscando...') {
-        // Si permisos fallaron, deja el estado acorde (ya lo setea _solicitarPermisos).
-        setState(() => _estadoConexion = 'Permisos denegados');
-      }
-      return;
-    }
-
-    var found = false;
-    _suscripcionEscaneo = _ble.scanForDevices(withServices: [_uuidServicio]).listen((device) {
-      if (device.name == _nombreEsp32) {
-        found = true;
-        _suscripcionEscaneo?.cancel();
-        if (mounted) setState(() => _estadoConexion = 'Conectando...');
-        _conectarDispositivo(device.id);
-      }
-    }, onError: (_) {
-      if (mounted) setState(() => _estadoConexion = 'Error escaneo');
-    });
-
-    Future.delayed(const Duration(seconds: 20), () {
-      if (mounted && !found && _estadoConexion == 'Buscando...') {
-        _suscripcionEscaneo?.cancel();
-        setState(() => _estadoConexion = 'No encontrado');
-      }
-    });
-  }
-
-  void _conectarDispositivo(String deviceId) {
-    _suscripcionConexion?.cancel();
-    _suscripcionConexion = _ble
-        .connectToDevice(id: deviceId, connectionTimeout: const Duration(seconds: 20))
-        .listen((update) {
-      if (!mounted) return;
-      switch (update.connectionState) {
-        case DeviceConnectionState.connected:
-          _connectedDeviceId = deviceId;
-          _estadoConexion = 'Conectado';
-          setState(() {});
-          _leerDatos(deviceId);
-          break;
-        case DeviceConnectionState.disconnected:
-          if (_connectedDeviceId == deviceId) {
-            _suscripcionDatos?.cancel();
-            _connectedDeviceId = null;
-            _estadoConexion = 'Desconectado';
-            _nivelDolor = 0;
-            _actividadDetectada = false;
-            setState(() {});
-          }
-          break;
-        case DeviceConnectionState.connecting:
-          _estadoConexion = 'Conectando...';
-          setState(() {});
-          break;
-        case DeviceConnectionState.disconnecting:
-          _estadoConexion = 'Desconectando...';
-          setState(() {});
-          break;
-      }
-    }, onError: (_) {
-      if (mounted) setState(() => _estadoConexion = 'Error conexión');
-    });
-  }
-
-  // ====== Lectura BLE (tokens CRISIS/EMERGENCIA + opcional FSR continuo)
-  void _leerDatos(String deviceId) {
-    final ch = QualifiedCharacteristic(
-      serviceId: _uuidServicio,
-      characteristicId: _uuidCaracteristica,
-      deviceId: deviceId,
-    );
-    _suscripcionDatos?.cancel();
-    _suscripcionDatos = _ble.subscribeToCharacteristic(ch).listen((data) {
-      if (!mounted) return;
-
-      String asText = '';
-      try {
-        asText = utf8.decode(data).trim();
-      } catch (_) {
-        // ignoramos payload no textual
-      }
-
-      // 1) Modo EVENTOS
-      if (asText == 'CRISIS') {
-        _onCrisisEvent();
-        return;
-      }
-      if (asText == 'EMERGENCIA') {
-        _onEmergencyEvent();
-        return;
-      }
-
-      // 2) Modo FSR CONTINUO (solo si activas el flag)
-      if (!kUseContinuousFSR) return;
-
-      int? valorCrudo;
-      if (asText.isNotEmpty) {
-        valorCrudo = int.tryParse(asText);
-      }
-      valorCrudo ??= (data.isNotEmpty ? data.first : null);
-      if (valorCrudo == null) return;
-
-      if (_estaCalibrando) {
-        _valoresCalibracion.add(valorCrudo);
-        setState(() {}); // actualiza contador en UI
-      } else {
-        _calcularNivelDolor(valorCrudo);
-      }
-    }, onError: (_) {
-      if (mounted) setState(() => _estadoConexion = 'Error lectura');
-    });
-  }
-
-  // ====== Calibración (sólo activa si kUseContinuousFSR = true)
-  void _iniciarCalibracion() {
-    setState(() {
-      _estaCalibrando = true;
-      _valoresCalibracion = [];
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Calibración: presiona el amuleto con tu fuerza máxima.')),
-    );
-  }
-
-  void _finalizarCalibracion() {
-    if (_valoresCalibracion.isEmpty) {
-      setState(() {
-        _estaCalibrando = false;
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Calibración cancelada: sin lecturas.')),
-      );
-      return;
-    }
-    final presionMaxima = _valoresCalibracion.reduce(max);
-    _valorMaximoDolor = presionMaxima;
-    _guardarValorMaximo(_valorMaximoDolor);
-    setState(() {
-      _estaCalibrando = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Calibración lista. Máximo registrado: $_valorMaximoDolor')),
-    );
-  }
-
-  void _reiniciarCalibracion() {
-    _valorMaximoDolor = 0;
-    _guardarValorMaximo(0);
-    setState(() {});
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Calibración reiniciada.')),
-    );
-  }
-
-  // ====== Mapeo a nivel 0–10
-  void _calcularNivelDolor(int valorCrudo) {
-    if (_valorMaximoDolor == 0) {
-      setState(() {
-        _nivelDolor = 0;
-        _actividadDetectada = false;
-      });
-      return;
-    }
-    int nivel = (valorCrudo * 10) ~/ _valorMaximoDolor;
-    nivel = max(0, min(10, nivel));
-    setState(() {
-      _nivelDolor = nivel;
-      _actividadDetectada = nivel > 0;
-    });
-  }
-
-  // ====== Eventos
-  void _onCrisisEvent() {
-    // cooldown de 8s para evitar múltiples taps en cadena
-    final now = DateTime.now();
-    if (now.difference(_ultimoCrisis).inSeconds < 8) return;
-    _ultimoCrisis = now;
-
-    if (_crisisNotificada) return;
-    setState(() => _crisisNotificada = true);
-
-    final up = Provider.of<UserProvider>(context, listen: false);
-    final crisis = up.registerCrisis(
-      intensity: 0,
-      duration: 0,
-      notes: 'Registrada por el amuleto (tap corto).',
-      trigger: 'Otro',
-      symptoms: const [],
-    );
-
-    NotificationService().showCrisisNotification(crisis);
-
-    Future.delayed(const Duration(seconds: 20), () {
-      if (mounted) setState(() => _crisisNotificada = false);
-    });
-  }
-
-  Future<void> _onEmergencyEvent() async {
-    final up = Provider.of<UserProvider>(context, listen: false);
-    final String? phone = up.emergencyPhone; // e.g. "+569..."
-    final String nombre = up.user?.name ?? 'Usuario Auna';
-
-    if (phone == null || phone.trim().isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Configura un contacto de emergencia en la app.')),
-      );
-      return;
-    }
-
-    final texto =
-        'ALERTA AUNA: $nombre solicitó ayuda. Se detectó una crisis (presión larga en el amuleto).';
-
-    final uri = Uri(
-      scheme: 'sms',
-      path: phone,
-      queryParameters: <String, String>{'body': texto},
-    );
-
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Abriendo SMS para enviar alerta…')),
-      );
-    } else {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se pudo abrir el SMS en este dispositivo.')),
-      );
-    }
-  }
-
-  void _desconectar() async {
-    await _suscripcionDatos?.cancel();
-    await _suscripcionConexion?.cancel();
-    _suscripcionDatos = null;
-    _suscripcionConexion = null;
-    if (mounted) {
-      setState(() {
-        _estadoConexion = 'Desconectado';
-        _connectedDeviceId = null;
-        _nivelDolor = 0;
-        _actividadDetectada = false;
-      });
-    }
-  }
-
-  // ------- Helpers para PDF -------
   PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
   PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
   PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
@@ -694,7 +292,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final durations =
         crises.map((c) => c.duration).whereType<int>().where((d) => d > 0).toList();
     final totalDuration = durations.isEmpty ? 0 : durations.reduce((a, b) => a + b);
-    final double? avgDuration = durations.isEmpty ? null : totalDuration / durations.length;
+    final double? avgDuration =
+        durations.isEmpty ? null : totalDuration / durations.length;
 
     int leves = 0, moderados = 0, severos = 0;
     for (final c in crises) {
@@ -797,7 +396,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         footer: (ctx) => pw.Align(
           alignment: pw.Alignment.centerRight,
           child: pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}',
-              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
+              style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
         ),
         build: (ctx) => [
           pw.Text('Reporte de Crisis - $userName',
@@ -859,9 +458,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${m}m ${s}s';
   }
 
-  // ===== Sheet del Amuleto (con/ sin calibración según flag)
+  // ===== Sheet del Amuleto (usa BleManager)
   void _showAmuletoSheet() {
-    final conectado = _estadoConexion == 'Conectado';
+    final bleWatch = context.watch<BleManager>();
+    final ble = context.read<BleManager>(); // para acciones
+    final conectado = bleWatch.isConnected;
+
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -882,101 +484,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
                   color: _navy,
                 ),
-                title: Text(conectado ? 'Conectado' : _estadoConexion),
+                title: Text(conectado ? 'Conectado' : bleWatch.connectionStateLabel),
                 subtitle: Text(conectado
-                    ? (kUseContinuousFSR ? 'Recibiendo datos del amuleto'
-                                          : 'Recibiendo eventos del amuleto')
+                    ? 'Recibiendo eventos del amuleto'
                     : 'Toca para conectar'),
-                onTap: conectado ? null : _iniciarConexion,
+                onTap: conectado ? null : ble.connect,
               ),
-
-              if (conectado && kUseContinuousFSR) ...[
-                const Divider(height: 8),
-                ListTile(
-                  leading: const Icon(Icons.speed),
-                  title: const Text('Calibración de presión'),
-                  subtitle: Text(_valorMaximoDolor == 0
-                      ? 'Sin calibrar'
-                      : 'Máximo guardado: $_valorMaximoDolor'),
-                ),
-                if (_estaCalibrando) ...[
-                  Padding(
-                    padding: EdgeInsets.symmetric(vertical: _sx(context, 6)),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Presiona con tu fuerza máxima…',
-                            style: TextStyle(color: _navy.withOpacity(.85)),
-                          ),
-                        ),
-                        Text('Muestras: ${_valoresCalibracion.length}'),
-                      ],
-                    ),
-                  ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: _finalizarCalibracion,
-                          child: const Text('Terminar calibración'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ] else ...[
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton(
-                          onPressed: _iniciarCalibracion,
-                          child: const Text('Iniciar calibración'),
-                        ),
-                      ),
-                      SizedBox(width: _sx(context, 10)),
-                      OutlinedButton(
-                        onPressed: _valorMaximoDolor == 0 ? null : _reiniciarCalibracion,
-                        child: const Text('Reiniciar'),
-                      ),
-                    ],
-                  ),
-                ],
-                SizedBox(height: _sx(context, 8)),
-                if (_valorMaximoDolor > 0)
-                  _GlassSurface(
-                    child: Row(
-                      children: [
-                        const Icon(Icons.healing, color: _navy),
-                        SizedBox(width: _sx(context, 8)),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Nivel actual'),
-                              SizedBox(height: _sx(context, 4)),
-                              LinearProgressIndicator(
-                                value: _nivelDolor / 10.0,
-                                minHeight: _sx(context, 8),
-                                borderRadius: BorderRadius.circular(_sx(context, 8)),
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(width: _sx(context, 10)),
-                        Text('$_nivelDolor/10',
-                            style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                  ),
-              ],
-
               if (conectado)
                 ListTile(
                   leading: const Icon(Icons.link_off),
                   title: const Text('Desconectar'),
                   onTap: () {
                     Navigator.pop(context);
-                    _desconectar();
+                    ble.disconnect();
                   },
                 ),
               const SizedBox(height: 6),
@@ -991,6 +511,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final vgap = _sx(context, 12);
+    final ble = context.watch<BleManager>();
+
+    final subtitleBle = ble.isConnected
+        ? 'Conectado — recibiendo eventos'
+        : (ble.connectionStateLabel.startsWith('Reconectando')
+            ? ble.connectionStateLabel
+            : (ble.connectionStateLabel == 'Desconectado'
+                ? 'Conectar y configurar'
+                : ble.connectionStateLabel));
 
     return Scaffold(
       backgroundColor: _bg,
@@ -1024,15 +553,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _ActionCard(
                 icon: Icons.bluetooth,
                 title: 'Amuleto Bluetooth',
-                subtitle: _estadoConexion == 'Conectado'
-                    ? (kUseContinuousFSR
-                        ? (_valorMaximoDolor == 0
-                            ? 'Conectado — sin calibración'
-                            : 'Conectado — nivel ${_nivelDolor}/10')
-                        : 'Conectado — recibiendo eventos')
-                    : (_estadoConexion == 'Buscando...' || _estadoConexion == 'Conectando...'
-                        ? _estadoConexion
-                        : 'Conectar y configurar'),
+                subtitle: subtitleBle,
                 onTap: _showAmuletoSheet,
               ),
               SizedBox(height: vgap),
