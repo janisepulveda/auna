@@ -1,40 +1,52 @@
 plugins {
     id("com.android.application")
     id("kotlin-android")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
+    // El plugin de Flutter siempre va después de Android/Kotlin.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.example.auna_app"
-    compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // ✅ Android 14 APIs (recomendado para BLE moderno)
+    compileSdk = 34
+
+    // (opcional) si usas NDK, puedes dejar el que trae Flutter:
+    // ndkVersion = "26.1.10909125"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.auna_app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+
+        // ✅ Mínimo soportado por Flutter + permission_handler
+        minSdk = 21
+        // ✅ Target 34 para permisos BLUETOOTH_SCAN/CONNECT
+        targetSdk = 34
+
+        // Puedes mantener los de Flutter si los manejas desde pubspec:
+        // versionCode = flutter.versionCode
+        // versionName = flutter.versionName
+
+        // O fijarlos manualmente:
+        versionCode = 1
+        versionName = "1.0.0"
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            // Firma de ejemplo. Cambia a tu config de release cuando corresponda.
             signingConfig = signingConfigs.getByName("debug")
+            isMinifyEnabled = false
+        }
+        debug {
+            // Sin cambios
         }
     }
 }

@@ -1,8 +1,8 @@
 // lib/user_provider.dart
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart'; // Importamos el paquete de IDs
+import 'package:uuid/uuid.dart';
 
-var uuid = const Uuid(); // Creamos una instancia para generar IDs
+var uuid = const Uuid();
 
 class UserData {
   final String name;
@@ -30,7 +30,6 @@ class CrisisModel {
   });
 }
 
-// --- ¡ASEGÚRATE QUE TENGA 'with ChangeNotifier'! ---
 class UserProvider with ChangeNotifier {
   UserData? _user;
   UserData? get user => _user;
@@ -40,7 +39,17 @@ class UserProvider with ChangeNotifier {
 
   int get crisisCount => _registeredCrises.length;
 
-  // Función para encontrar una crisis por su ID
+  // --- Contacto de emergencia (nuevo) ---
+  String? _emergencyPhone;
+  String? get emergencyPhone => _emergencyPhone;
+
+  void setEmergencyPhone(String? phone) {
+    final p = phone?.trim();
+    _emergencyPhone = (p == null || p.isEmpty) ? null : p;
+    notifyListeners();
+  }
+  // --- fin contacto emergencia ---
+
   CrisisModel? getCrisisById(String id) {
     try {
       return _registeredCrises.firstWhere((c) => c.id == id);
@@ -60,7 +69,6 @@ class UserProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  // Función de registro (ahora devuelve la crisis)
   CrisisModel registerCrisis({
     required double intensity,
     required int duration,
@@ -69,7 +77,7 @@ class UserProvider with ChangeNotifier {
     required List<String> symptoms,
   }) {
     final newCrisis = CrisisModel(
-      id: uuid.v4(), // Asigna un ID único
+      id: uuid.v4(),
       date: DateTime.now(),
       intensity: intensity,
       duration: duration,
@@ -79,10 +87,9 @@ class UserProvider with ChangeNotifier {
     );
     _registeredCrises.add(newCrisis);
     notifyListeners();
-    return newCrisis; 
+    return newCrisis;
   }
 
-  // Función para actualizar (editar) una crisis
   void updateCrisis({
     required String id,
     required double intensity,
@@ -91,14 +98,13 @@ class UserProvider with ChangeNotifier {
     required String trigger,
     required List<String> symptoms,
   }) {
-    final crisisIndex = _registeredCrises.indexWhere((c) => c.id == id);
-    if (crisisIndex != -1) {
-      _registeredCrises[crisisIndex].intensity = intensity;
-      _registeredCrises[crisisIndex].duration = duration;
-      _registeredCrises[crisisIndex].notes = notes;
-      _registeredCrises[crisisIndex].trigger = trigger;
-      _registeredCrises[crisisIndex].symptoms = symptoms;
-      
+    final idx = _registeredCrises.indexWhere((c) => c.id == id);
+    if (idx != -1) {
+      _registeredCrises[idx].intensity = intensity;
+      _registeredCrises[idx].duration = duration;
+      _registeredCrises[idx].notes = notes;
+      _registeredCrises[idx].trigger = trigger;
+      _registeredCrises[idx].symptoms = symptoms;
       notifyListeners();
     }
   }

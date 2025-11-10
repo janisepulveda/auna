@@ -2,6 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Permiso de Bluetooth (iOS 13+) -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Necesitamos Bluetooth para conectar el amuleto Auna.</string>
+
+<!-- (Compatibilidad con iOS antiguos; opcional) -->
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>La app usa Bluetooth para comunicarse con el amuleto Auna.</string>
+
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

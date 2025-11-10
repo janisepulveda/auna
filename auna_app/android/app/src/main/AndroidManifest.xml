@@ -1,4 +1,23 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+<!-- Compatibilidad pre-Android 12 (API ≤ 30) -->
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" android:maxSdkVersion="30" />
+
+<!-- Android 12+ (API 31+) permisos BLE modernos -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+<!-- Sólo si tu app ANUNCIA por BLE; para tu caso normal NO es necesario -->
+<!-- <uses-permission android:name="android.permission.BLUETOOTH_ADVERTISE" /> -->
+
+<!-- Suele estar ya, pero por si acaso -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+<!-- Capacidades de hardware (ayuda a Play Store y a filtros de instalación) -->
+    <uses-feature android:name="android.hardware.bluetooth_le" android:required="false" />
+
     <application
         android:label="auna_app"
         android:name="${applicationName}"
