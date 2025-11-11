@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'crisis_detail_screen.dart';
 import 'user_provider.dart';
-import 'dart:ui'; // <-- ¡ASEGÚRATE DE QUE ESTE IMPORT ESTÉ AQUÍ!
+import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,92 +13,96 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final int totalFlowers = 6;
+  static const String _closed = 'assets/imagenes/florero_0_abiertas.png';
+  static const String _open   = 'assets/imagenes/florero_1_abierta.png';
 
-  // Tu lista de posiciones (con el último ajuste para subirlas)
-  final List<Map<String, double>> _flowerPositions = const [
-    {'top': 0.48, 'left': 0.64, 'size': 50.0},
-    {'top': 0.47, 'left': 0.15, 'size': 55.0},
-    {'top': 0.55, 'left': 0.75, 'size': 60.0},
-    {'top': 0.58, 'left': 0.28, 'size': 65.0},
-    {'top': 0.68, 'left': 0.05, 'size': 70.0},
-    {'top': 0.66, 'left': 0.60, 'size': 75.0},
-  ];
-
-  String _getBackgroundImage() {
-    return 'assets/imagenes/florero_0_abiertas.png';
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Precache to avoid flicker on swap
+    precacheImage(const AssetImage(_closed), context);
+    precacheImage(const AssetImage(_open), context);
   }
+
+  String _assetFor(UserProvider provider) =>
+      (provider.crisisCount > 0) ? _open : _closed;
 
   @override
   Widget build(BuildContext context) {
-    final screenHeight = MediaQuery.of(context).size.height;
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    const List<String> weekdays = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
-    const List<String> months = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
-    final DateTime now = DateTime.now();
-    final String formattedDate = "${weekdays[now.weekday]}, ${now.day} de ${months[now.month]}";
+    const weekdays = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+    const months   = ["", "enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+    final now = DateTime.now();
+    final formattedDate = "${weekdays[now.weekday]}, ${now.day} de ${months[now.month]}";
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        Image.asset(_getBackgroundImage(), fit: BoxFit.cover),
-        
-        // Jardín de flores
+        // Strict, full-screen, center-aligned, cropped background
         Consumer<UserProvider>(
-          builder: (context, userProvider, child) {
-            final openFlowersCount = userProvider.crisisCount;
-            return Stack(
-              children: List.generate(
-                totalFlowers,
-                (index) {
-                  final position = _flowerPositions[index];
-                  final bool isOpen = index < openFlowersCount;
-                  
-                  return FlowerWidget(
-                    key: ValueKey(index),
-                    top: screenHeight * position['top']!,
-                    left: screenWidth * position['left']!,
-                    size: position['size']!,
-                    isOpen: isOpen,
-                  );
-                },
+          builder: (context, userProvider, _) {
+            final asset = _assetFor(userProvider);
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 320),
+              switchInCurve: Curves.easeOut,
+              switchOutCurve: Curves.easeIn,
+              layoutBuilder: (currentChild, previousChildren) {
+                // Ensure both current and previous are clipped to the screen bounds
+                return Stack(
+                  fit: StackFit.expand,
+                  children: <Widget>[
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
+              transitionBuilder: (child, animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: ScaleTransition(
+                    scale: Tween<double>(begin: 0.98, end: 1.0).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: _FullScreenCroppedImage(
+                key: ValueKey(asset),
+                asset: asset,
               ),
             );
           },
         ),
-        
-        // Interfaz de usuario
+
+        // Foreground UI
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               children: [
                 const SizedBox(height: 20),
-                // Saludo
                 Consumer<UserProvider>(
                   builder: (context, userProvider, child) {
                     final userName = userProvider.user?.name ?? 'Bienvenida';
                     return Column(
                       children: [
-                        Text(formattedDate, style: const TextStyle(fontSize: 14, color: Colors.white70)),
+                        Text(
+                          formattedDate,
+                          style: const TextStyle(fontSize: 14, color: Colors.white70),
+                        ),
                         Text(
                           'Hola, ${userName.split(' ').first}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 28,
                             color: Colors.white,
-                            shadows: [Shadow(blurRadius: 2.0, color: Colors.black45)]
+                            shadows: [Shadow(blurRadius: 2.0, color: Colors.black45)],
                           ),
                         ),
                       ],
                     );
                   },
                 ),
-                
                 const Spacer(),
 
-                // Botón "Liquid Glass"
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12.0),
                   child: BackdropFilter(
@@ -110,11 +114,13 @@ class _HomeScreenState extends State<HomeScreen> {
                         border: Border.all(color: const Color(0x33FFFFFF)),
                       ),
                       child: InkWell(
-                        onTap: () {
-                          Navigator.push(
+                        onTap: () async {
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(builder: (context) => const CrisisDetailScreen()),
                           );
+                          // If crisisCount changes, AnimatedSwitcher will swap images.
+                          setState(() {});
                         },
                         borderRadius: BorderRadius.circular(12.0),
                         child: Container(
@@ -140,7 +146,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
-                
+
                 const SizedBox(height: 20),
               ],
             ),
@@ -151,42 +157,25 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// FlowerWidget (sin cambios)
-class FlowerWidget extends StatelessWidget {
-  final double top;
-  final double left;
-  final double size;
-  final bool isOpen;
-
-  const FlowerWidget({
-    super.key,
-    required this.top,
-    required this.left,
-    required this.size,
-    required this.isOpen,
-  });
+/// Renders an asset as a full-screen, center-aligned, cropped background.
+/// The `ClipRect` enforces the exact screen bounds, and `SizedBox.expand` fills them.
+/// `BoxFit.cover` scales the image to fully cover and crops any overflow.
+class _FullScreenCroppedImage extends StatelessWidget {
+  final String asset;
+  const _FullScreenCroppedImage({super.key, required this.asset});
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: top,
-      left: left,
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 100),
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return ScaleTransition(scale: animation, child: child);
-        },
-        child: isOpen
-            ? Image.asset(
-                'assets/imagenes/apertura.png',
-                key: const ValueKey('open'),
-                height: size,
-              )
-            : Image.asset(
-                'assets/imagenes/recogimiento.png',
-                key: const ValueKey('closed'),
-                height: size,
-              ),
+    return Positioned.fill(
+      child: ClipRect(
+        child: SizedBox.expand(
+          child: Image.asset(
+            asset,
+            fit: BoxFit.cover,
+            alignment: Alignment.center,
+            gaplessPlayback: true,
+          ),
+        ),
       ),
     );
   }
