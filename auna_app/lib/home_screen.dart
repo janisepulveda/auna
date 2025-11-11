@@ -26,14 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   String _getBackgroundImage() {
-    final hour = DateTime.now().hour;
-    if (hour >= 6 && hour < 17) {
-      return 'assets/imagenes/dia.png';
-    } else if (hour >= 17 && hour < 20) {
-      return 'assets/imagenes/tarde.png';
-    } else {
-      return 'assets/imagenes/noche.png';
-    }
+    return 'assets/imagenes/florero_0_abiertas.png';
   }
 
   @override
