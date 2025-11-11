@@ -94,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             fontWeight: FontWeight.bold,
                             fontSize: 28,
                             color: Colors.white,
-                            shadows: [Shadow(blurRadius: 2.0, color: Colors.black45)],
+                            shadows: [Shadow(blurRadius: 2.0, color: Color.fromARGB(255, 0, 0, 0))],
                           ),
                         ),
                       ],
@@ -129,12 +129,12 @@ class _HomeScreenState extends State<HomeScreen> {
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.add, color: Colors.white),
+                              Icon(Icons.add, color: Color.fromARGB(170, 0, 0, 0)),
                               SizedBox(width: 8),
                               Text(
                                 'Registrar Crisis',
                                 style: TextStyle(
-                                  color: Colors.white,
+                                  color: Color.fromARGB(170, 0, 0, 0),
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                 ),
