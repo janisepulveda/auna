@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
+//import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
@@ -276,7 +276,6 @@ class BleManager extends ChangeNotifier {
   Future<void> _handleEmergency() async {
     final up = userProvider;
     final String? phone = up?.emergencyPhone;
-    final String nombre = up?.user?.name ?? 'Usuario Auna';
 
     if (phone == null || phone.trim().isEmpty) {
       // sin contexto de UI; dejamos la notificación local como feedback
