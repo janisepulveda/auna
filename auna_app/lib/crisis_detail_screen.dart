@@ -15,18 +15,18 @@ class Glass {
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.white.withOpacity(borderAlpha), width: 1.2),
+      border: Border.all(color: Colors.white.withValues(alpha: borderAlpha), width: 1.2),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withOpacity(fillAlpha + .1),
-          Colors.white.withOpacity(fillAlpha),
+          Colors.white.withValues(alpha: fillAlpha + .1),
+          Colors.white.withValues(alpha: fillAlpha),
         ],
       ),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFAABEDC).withOpacity(0.25),
+          color: const Color(0xFFAABEDC).withValues(alpha: 0.25),
           blurRadius: 28,
           offset: const Offset(0, 10),
         ),
@@ -141,27 +141,27 @@ class GlassChip extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 60),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.2),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2),
               gradient: selected
                   ? LinearGradient(
                       colors: [
-                        accent.withOpacity(0.9),
-                        const Color(0xFFF2B0B5).withOpacity(0.85),
+                        accent.withValues(alpha: 0.9),
+                        const Color(0xFFF2B0B5).withValues(alpha: 0.85),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     )
                   : LinearGradient(
                       colors: [
-                        Colors.white.withOpacity(0.38),
-                        Colors.white.withOpacity(0.22),
+                        Colors.white.withValues(alpha: 0.38),
+                        Colors.white.withValues(alpha: 0.22),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
               boxShadow: [
                 BoxShadow(
-                  color: (selected ? accent : const Color(0xFFAABEDC)).withOpacity(0.22),
+                  color: (selected ? accent : const Color(0xFFAABEDC)).withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -176,7 +176,7 @@ class GlassChip extends StatelessWidget {
                 overflow: TextOverflow.visible,
                 style: TextStyle(
                   height: 1.2,
-                  color: selected ? Colors.white : textBase.withOpacity(0.95),
+                  color: selected ? Colors.white : textBase.withValues(alpha: 0.95),
                   fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
@@ -226,8 +226,8 @@ class IntensitySlider extends StatelessWidget {
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
                               colors: [
-                                Colors.white.withOpacity(0.25),
-                                Colors.white.withOpacity(0.18),
+                                Colors.white.withValues(alpha: 0.25),
+                                Colors.white.withValues(alpha: 0.18),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
@@ -240,10 +240,10 @@ class IntensitySlider extends StatelessWidget {
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 12,
-                          activeTrackColor: const Color(0xFFF2B0B5).withOpacity(0.9),
-                          inactiveTrackColor: Colors.white.withOpacity(0.25),
+                          activeTrackColor: const Color(0xFFF2B0B5).withValues(alpha: 0.9),
+                          inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
                           thumbColor: const Color(0xFFFFADAD),
-                          overlayColor: const Color(0xFFFFADAD).withOpacity(0.18),
+                          overlayColor: const Color(0xFFFFADAD).withValues(alpha: 0.18),
                           showValueIndicator: ShowValueIndicator.never,
                         ),
                         child: Slider(
@@ -266,18 +266,18 @@ class IntensitySlider extends StatelessWidget {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withOpacity(0.6), width: 1.3),
+                            border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.3),
                             gradient: LinearGradient(
                               colors: [
-                                const Color(0xFFFFADAD).withOpacity(0.95),
-                                const Color(0xFFF2B0B5).withOpacity(0.9),
+                                const Color(0xFFFFADAD).withValues(alpha: 0.95),
+                                const Color(0xFFF2B0B5).withValues(alpha: 0.9),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF2B0B5).withOpacity(0.35),
+                                color: const Color(0xFFF2B0B5).withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),

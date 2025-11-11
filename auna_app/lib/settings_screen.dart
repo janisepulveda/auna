@@ -1,23 +1,23 @@
 // lib/settings_screen.dart
 import 'dart:async';
-import 'dart:convert';
+//import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+//import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
+//import 'package:permission_handler/permission_handler.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
+//import 'package:url_launcher/url_launcher.dart';
 
 import 'user_provider.dart';
-import 'notification_service.dart';
+//import 'notification_service.dart';
 import 'ble_manager.dart'; // <-- usamos el servicio global BLE
 
 // ===== Paleta
@@ -38,14 +38,14 @@ BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withOpacity(0.35),
-          Colors.white.withOpacity(0.15),
+          Colors.white.withValues(alpha: 0.35),
+          Colors.white.withValues(alpha: 0.15),
         ],
       ),
-      border: Border.all(color: Colors.white.withOpacity(0.48), width: 1.0),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.48), width: 1.0),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFAABEDC).withOpacity(0.12),
+          color: const Color(0xFFAABEDC).withValues(alpha: 0.12),
           blurRadius: _sx(context, 10),
           offset: Offset(0, _sx(context, 5)),
         ),
@@ -117,13 +117,13 @@ class _ActionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(_sx(context, 14)),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white.withOpacity(0.8),
-                        Colors.white.withOpacity(0.6),
+                        Colors.white.withValues(alpha: 0.8),
+                        Colors.white.withValues(alpha: 0.6),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(color: Colors.white.withOpacity(0.6)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
                   ),
                   child: Icon(icon, color: _navy, size: iconSize),
                 ),
@@ -150,7 +150,7 @@ class _ActionCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _navy.withOpacity(0.72),
+                      color: _navy.withValues(alpha: 0.72),
                       fontSize: _sx(context, 12.5),
                       height: 1.22,
                     ),
@@ -159,7 +159,7 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: _sx(context, 6)),
-            Icon(Icons.chevron_right, color: _navy.withOpacity(0.7), size: _sx(context, 22)),
+            Icon(Icons.chevron_right, color: _navy.withValues(alpha: 0.7), size: _sx(context, 22)),
           ],
         ),
       ),
@@ -546,7 +546,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Accede a todas las funciones',
                 style: TextStyle(
                   fontSize: _sx(context, 13),
-                  color: _navy.withOpacity(0.7),
+                  color: _navy.withValues(alpha: 0.7),
                 ),
               ),
               SizedBox(height: _sx(context, 10)),

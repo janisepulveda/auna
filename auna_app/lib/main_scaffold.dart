@@ -89,7 +89,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                         final double innerW = constraints.maxWidth - padH * 2;
                         final double cellW = innerW / count;
                         final double pillW = cellW - cellMargin * 2;
-                        final double pillH = barHeight - padV * 2 - (cellMargin * 2);
+                        const double pillH = barHeight - padV * 2 - (cellMargin * 2);
 
                         double leftFor(int i) => i * cellW + cellMargin;
 

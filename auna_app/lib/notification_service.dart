@@ -38,8 +38,8 @@ class NotificationService {
       // categorías opcionales si luego agregas más acciones
     );
 
-    final initSettings =
-        const InitializationSettings(android: androidInit, iOS: darwinInit);
+    const initSettings =
+        InitializationSettings(android: androidInit, iOS: darwinInit);
 
     await _fln.initialize(
       initSettings,
@@ -87,7 +87,7 @@ class NotificationService {
       category: AndroidNotificationCategory.recommendation, // heads-up
       // Acción "Editar" (abre la app con payload)
       actions: <AndroidNotificationAction>[
-        AndroidNotificationAction(
+        const AndroidNotificationAction(
           'EDITAR_CRISIS',
           'Editar',
           showsUserInterface: true,
