@@ -1,4 +1,5 @@
 // lib/settings_screen.dart
+
 import 'dart:async';
 //import 'dart:convert';
 import 'dart:io';
@@ -18,20 +19,20 @@ import 'package:provider/provider.dart';
 
 import 'user_provider.dart';
 //import 'notification_service.dart';
-import 'ble_manager.dart'; // <-- usamos el servicio global BLE
+import 'ble_manager.dart'; // <-- usamos el servicio global ble
 
-// ===== Paleta
+// ===== paleta de colores base para la pantalla de ajustes =====
 const _navy = Color(0xFF38455C);
 const _bg = Color(0xFFF0F7FA);
 
-// ===== Utilidad de escala
+// ===== utilidad de escala: ajusta medidas en función del ancho del teléfono =====
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
   final s = (w / 390).clamp(.75, 0.95);
   return v * s;
 }
 
-// ===== Glass helpers
+// ===== estilos "glass": contenedor con gradiente, borde y sombra suaves =====
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
       borderRadius: BorderRadius.circular(_sx(context, 16)),
       gradient: LinearGradient(
@@ -52,18 +53,22 @@ BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
       ],
     );
 
+// ===== superficie glass reutilizable (desenfoque + contenedor) =====
 class _GlassSurface extends StatelessWidget {
   final Widget child;
   const _GlassSurface({required this.child});
 
+  // padding por defecto dependiente de la escala
   static EdgeInsets _defaultPad(BuildContext c) => EdgeInsets.all(_sx(c, 10));
 
   @override
   Widget build(BuildContext context) {
     final r = _sx(context, 16);
     return ClipRRect(
+      // recorta bordes redondeados para que el blur no se salga del contenedor
       borderRadius: BorderRadius.circular(r),
       child: BackdropFilter(
+        // aplica desenfoque al fondo para efecto glass
         filter: ui.ImageFilter.blur(
           sigmaX: _sx(context, 10),
           sigmaY: _sx(context, 10),
@@ -78,7 +83,7 @@ class _GlassSurface extends StatelessWidget {
   }
 }
 
-// ===== Card de acción
+// ===== tarjeta de acción: icono + título + subtítulo + flecha =====
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -93,16 +98,18 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // tamaños sensibles al ancho del dispositivo
     final iconSize = _sx(context, 32);
     final tileSide = _sx(context, 48);
     final gap = _sx(context, 10);
 
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
+      behavior: HitTestBehavior.opaque, // toda el área responde al tap
       child: _GlassSurface(
         child: Row(
           children: [
+            // bloque del icono con su propio blur y gradiente
             ClipRRect(
               borderRadius: BorderRadius.circular(_sx(context, 14)),
               child: BackdropFilter(
@@ -130,10 +137,12 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: gap),
+            // textos de título y subtítulo con elipsis
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // título fuerte
                   Text(
                     title,
                     maxLines: 1,
@@ -145,6 +154,7 @@ class _ActionCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: _sx(context, 2)),
+                  // subtítulo descriptivo
                   Text(
                     subtitle,
                     maxLines: 2,
@@ -159,6 +169,7 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: _sx(context, 6)),
+            // chevron de navegación
             Icon(Icons.chevron_right, color: _navy.withValues(alpha: 0.7), size: _sx(context, 22)),
           ],
         ),
@@ -167,7 +178,7 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-// ===================== SETTINGS SCREEN =====================
+// ===================== settings screen =====================
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -175,13 +186,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ====== PDF helpers (todo lo BLE vive ahora en BleManager) ======
-
+  // ===== helpers de color para el pdf (coinciden con la paleta visual) =====
   PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
   PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
   PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
   PdfColor get _pdfGrey => const PdfColor.fromInt(0xFF6B7A88);
 
+  // ===== util: contar síntomas repetidos para resumen en pdf =====
   Map<String, int> countSymptoms(Iterable<String> xs) {
     final m = <String, int>{};
     for (final raw in xs) {
@@ -192,10 +203,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return m;
   }
 
+  // ===== selector de periodo antes de exportar el pdf =====
   Future<void> _pickAndExportPdf() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
-      showDragHandle: true,
+      showDragHandle: true, // tirador para sugerir que se puede arrastrar
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -231,6 +243,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!mounted || choice == null) return;
 
+    // resuelve rango según la opción elegida
     DateTime? from;
     DateTime? to;
     if (choice == 'month') {
@@ -254,13 +267,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (picked == null) return;
       from = picked.start;
+      // sumamos 1 día al final para incluirlo de forma exclusiva
       to = picked.end.add(const Duration(days: 1));
     }
     await _exportHistoryToPdf(from: from, to: to);
   }
 
+  // ===== genera y guarda el pdf en documentos; intenta abrirlo con open_file_plus =====
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
+
+    // prepara localización y formato de fechas
     if (!mounted) return;
     try {
       await initializeDateFormatting('es_CL', null);
@@ -268,6 +285,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (!mounted) return;
 
+    // obtiene datos del usuario y filtra por rango
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
     final userName = up.user?.name ?? 'Usuario Auna';
@@ -276,12 +294,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
     if (crises.isEmpty) {
+      // feedback si no hay datos en el rango seleccionado
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hay crisis en el período seleccionado.')),
       );
       return;
     }
+
+    // ordena y calcula indicadores básicos
     crises.sort((a, b) => a.date.compareTo(b.date));
     final df = DateFormat.yMMMMd('es_CL');
     final tf = DateFormat.Hm('es_CL');
@@ -295,6 +316,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final double? avgDuration =
         durations.isEmpty ? null : totalDuration / durations.length;
 
+    // buckets de intensidad (para un vistazo rápido)
     int leves = 0, moderados = 0, severos = 0;
     for (final c in crises) {
       final v = c.intensity.toInt();
@@ -307,6 +329,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
+    // resumen de síntomas más frecuentes
     final symptomsCounts = countSymptoms(crises.expand((c) => c.symptoms));
     String symptomsSummary(Map<String, int> map, {int take = 6}) {
       if (map.isEmpty) return '-';
@@ -314,8 +337,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return ord.take(take).map((e) => '• ${e.key}: ${e.value}').join('\n');
     }
 
+    // alias locales para colores pdf
     final pdfNavy = _pdfNavy, pdfIce = _pdfIce, pdfLine = _pdfLine, pdfGrey = _pdfGrey;
 
+    // helpers para celdas de tabla
     pw.Widget headCell(String t) => pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 6),
           color: pdfIce,
@@ -337,6 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
         );
 
+    // tabla de resumen (indicadores generales)
     final summaryTable = pw.Table(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {0: pw.FixedColumnWidth(175), 1: pw.FlexColumnWidth(1)},
@@ -351,6 +377,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
 
+    // tabla de detalle de crisis (listado con columnas clave)
     final detailTable = pw.TableHelper.fromTextArray(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {
@@ -389,6 +416,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .toList(),
     );
 
+    // página principal del reporte con encabezado, resumen y detalle
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -423,6 +451,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
+    // guarda el pdf en la carpeta de documentos de la app e intenta abrirlo
     try {
       final dir = await getApplicationDocumentsDirectory();
       final name =
@@ -430,12 +459,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final file = File("${dir.path}/$name");
       await file.writeAsBytes(await pdf.save());
       final res = await OpenFile.open(file.path);
+      // si no se puede abrir, informa dónde quedó el archivo
       if (res.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('PDF guardado en Documentos ($name)')),
         );
       }
     } catch (e) {
+      // feedback de error acotado (máx 100 caracteres)
       if (mounted) {
         final msg = e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -447,6 +478,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  // ===== convierte segundos a formato legible (ej. 1h 05m, 12m 30s) =====
   String _formatDuration(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -458,10 +490,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${m}m ${s}s';
   }
 
-  // ===== Sheet del Amuleto (usa BleManager)
+  // ===== hoja inferior para administrar conexión del amuleto (usa blemanager) =====
   void _showAmuletoSheet() {
-    final bleWatch = context.watch<BleManager>();
-    final ble = context.read<BleManager>(); // para acciones
+    final bleWatch = context.watch<BleManager>(); // escucha cambios de estado
+    final ble = context.read<BleManager>();       // instancia para ejecutar acciones
     final conectado = bleWatch.isConnected;
 
     showModalBottomSheet(
@@ -479,6 +511,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              // tile principal: conectar o mostrar estado actual
               ListTile(
                 leading: Icon(
                   conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
@@ -490,6 +523,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     : 'Toca para conectar'),
                 onTap: conectado ? null : ble.connect,
               ),
+              // acción secundaria: desconectar cuando ya está conectado
               if (conectado)
                 ListTile(
                   leading: const Icon(Icons.link_off),
@@ -507,12 +541,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ===================== UI =====================
+  // ===================== ui principal de la pantalla de ajustes =====================
   @override
   Widget build(BuildContext context) {
     final vgap = _sx(context, 12);
     final ble = context.watch<BleManager>();
 
+    // subtítulo dinámico para el estado del amuleto
     final subtitleBle = ble.isConnected
         ? 'Conectado — recibiendo eventos'
         : (ble.connectionStateLabel.startsWith('Reconectando')
@@ -522,7 +557,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : ble.connectionStateLabel));
 
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: _bg, // fondo celeste muy suave
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.fromLTRB(
@@ -533,6 +568,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Column(
             children: [
+              // título de la pantalla
               Text(
                 'Configuración',
                 style: TextStyle(
@@ -542,6 +578,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               SizedBox(height: _sx(context, 4)),
+              // subtítulo descriptivo
               Text(
                 'Accede a todas las funciones',
                 style: TextStyle(
@@ -550,6 +587,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               SizedBox(height: _sx(context, 10)),
+              // tarjeta: estado/conexión del amuleto
               _ActionCard(
                 icon: Icons.bluetooth,
                 title: 'Amuleto Bluetooth',
@@ -557,6 +595,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 onTap: _showAmuletoSheet,
               ),
               SizedBox(height: vgap),
+              // tarjeta: contacto de emergencia (placeholder)
               _ActionCard(
                 icon: Icons.person_add_alt_1,
                 title: 'Contacto de Emergencia',
@@ -566,6 +605,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               SizedBox(height: vgap),
+              // tarjeta: exportar historial a pdf
               _ActionCard(
                 icon: Icons.download_outlined,
                 title: 'Exportar Historial',

@@ -1,4 +1,5 @@
 // lib/main_scaffold.dart
+
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'home_screen.dart';
@@ -13,39 +14,44 @@ class MainScaffold extends StatefulWidget {
 }
 
 class _MainScaffoldState extends State<MainScaffold> {
+  // índice actual del ítem seleccionado en la barra inferior
   int _selectedIndex = 0;
 
+  // lista de pantallas principales disponibles en la navegación inferior
   static const List<Widget> _widgetOptions = <Widget>[
     HomeScreen(),
     HistoryScreen(),
     SettingsScreen(),
   ];
 
-  final Color activeBlue = const Color(0xFFFFADAD); 
-  final Color iconIdle = const Color(0xFF38455C);               
+  // color activo (rosado de flor de loto)
+  final Color activeBlue = const Color(0xFFFFADAD);
 
-  //final Color _purple = const Color(0xFF6359E9);
-  //final Color _red = const Color(0xFFE84C55);
-  //final Color _activePillColor = const Color(0xFFB4AFFF).withOpacity(0.5); 
+  // color base para íconos y texto inactivos
+  final Color iconIdle = const Color(0xFF38455C);
 
-
+  // === método que construye cada ítem del menú de navegación ===
   Widget _buildNavItem({
     required IconData icon,
     required String text,
     required int index,
   }) {
+    // verifica si el ítem actual está seleccionado
     final bool isSelected = (_selectedIndex == index);
+
+    // define el color según el estado activo o inactivo
     final Color color = isSelected ? activeBlue : iconIdle.withValues(alpha: 0.8);
 
     return Expanded(
       child: GestureDetector(
+        // al tocar, actualiza el índice seleccionado
         onTap: () => setState(() => _selectedIndex = index),
-        behavior: HitTestBehavior.opaque, 
+        behavior: HitTestBehavior.opaque, // asegura que todo el área sea tocable
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: color, size: 22),
-            const SizedBox(height: 4), 
+            const SizedBox(height: 4),
             Text(
               text,
               style: TextStyle(
@@ -60,17 +66,22 @@ class _MainScaffoldState extends State<MainScaffold> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // permite que el cuerpo se extienda debajo de la barra inferior para efectos de blur
       extendBody: true,
+
+      // cuerpo principal: muestra la pantalla correspondiente al índice seleccionado
       body: Center(child: _widgetOptions.elementAt(_selectedIndex)),
+
+      // barra inferior de navegación con diseño translúcido
       bottomNavigationBar: SafeArea(
-        top: false,
+        top: false, // evita duplicar el padding superior
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
           child: ClipRect(
+            // aplica efecto glass (desenfoque)
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
               child: Row(
@@ -78,12 +89,12 @@ class _MainScaffoldState extends State<MainScaffold> {
                   Expanded(
                     child: LayoutBuilder(
                       builder: (context, constraints) {
-                        // 👇 CAMBIOS AQUÍ:
-                        const double barHeight = 80; // Antes 70, más alta para cápsula cuadrada
-                        const double padH = 6;
-                        const double padV = 0; // Antes 6, para que el contenido tenga más espacio vertical
-                        const int count = 3;
-                        const double cellMargin = 16; // Antes 12, más margen para hacerla más "cuadrada"
+                        // configuración de tamaños y proporciones
+                        const double barHeight = 80; // altura de la barra
+                        const double padH = 6; // padding horizontal interno
+                        const double padV = 0; // sin padding vertical para más espacio útil
+                        const int count = 3; // cantidad de ítems
+                        const double cellMargin = 16; // margen interno entre ítems
 
                         final radius = BorderRadius.circular(999);
                         final double innerW = constraints.maxWidth - padH * 2;
@@ -91,6 +102,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                         final double pillW = cellW - cellMargin * 2;
                         const double pillH = barHeight - padV * 2 - (cellMargin * 2);
 
+                        // función auxiliar para calcular posición horizontal de la cápsula
                         double leftFor(int i) => i * cellW + cellMargin;
 
                         return ClipRRect(
@@ -100,19 +112,13 @@ class _MainScaffoldState extends State<MainScaffold> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: padH, vertical: padV),
                             decoration: BoxDecoration(
-                              //gradient: LinearGradient(
-                                //colors: [
-                                 // _purple.withOpacity(0.35),
-                                  //_red.withOpacity(0.35),
-                                //],
-                                //begin: Alignment.centerLeft,
-                                //end: Alignment.centerRight,
-                              //),
                               borderRadius: radius,
+                              // borde translúcido gris claro alrededor de la barra
                               border: Border.all(
                                 color: const Color.fromARGB(123, 211, 211, 211).withValues(alpha: 0.25),
                                 width: 1,
                               ),
+                              // sombra sutil para destacar la barra sobre el fondo
                               boxShadow: [
                                 BoxShadow(
                                   color: const Color.fromARGB(123, 211, 211, 211).withValues(alpha: 0.15),
@@ -124,34 +130,35 @@ class _MainScaffoldState extends State<MainScaffold> {
                             clipBehavior: Clip.hardEdge,
                             child: Stack(
                               children: [
-                                // ===== cápsula activa =====
+                                // ===== cápsula translúcida que se mueve según el ítem activo =====
                                 AnimatedPositioned(
                                   duration: const Duration(milliseconds: 260),
                                   curve: Curves.easeOutCubic,
-                                  top: (barHeight - padV * 2 - pillH) / 2, 
+                                  top: (barHeight - padV * 2 - pillH) / 2,
                                   left: leftFor(_selectedIndex),
                                   width: pillW,
                                   height: pillH,
                                   child: ClipRRect(
                                     borderRadius: BorderRadius.circular(999),
                                     child: BackdropFilter(
-                                      filter: ImageFilter.blur(
-                                          sigmaX: 22, sigmaY: 22),
+                                      filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
                                       child: Container(
                                         decoration: BoxDecoration(
-                                          //color: _activePillColor, 
-                                          borderRadius:
-                                              BorderRadius.circular(999),
+                                          borderRadius: BorderRadius.circular(999),
                                           border: Border.all(
-                                            color: const Color.fromARGB(255, 212, 212, 212).withValues(alpha: 0.30),
+                                            color: const Color.fromARGB(255, 212, 212, 212)
+                                                .withValues(alpha: 0.30),
                                             width: 1,
                                           ),
+                                          // degradado vertical muy sutil (para dar sensación de volumen)
                                           gradient: LinearGradient(
                                             begin: Alignment.topCenter,
                                             end: Alignment.bottomCenter,
                                             colors: [
-                                              const Color.fromARGB(255, 137, 137, 137).withValues(alpha: 0.12),
-                                              const Color.fromARGB(255, 137, 137, 137).withValues(alpha: 0.00),
+                                              const Color.fromARGB(255, 137, 137, 137)
+                                                  .withValues(alpha: 0.12),
+                                              const Color.fromARGB(255, 137, 137, 137)
+                                                  .withValues(alpha: 0.00),
                                             ],
                                             stops: const [0.0, 0.7],
                                           ),
@@ -161,12 +168,12 @@ class _MainScaffoldState extends State<MainScaffold> {
                                   ),
                                 ),
 
-                                // ===== Ítems de navegación =====
+                                // ===== fila de ítems de navegación =====
                                 Align(
                                   alignment: Alignment.center,
                                   child: SizedBox(
                                     width: innerW,
-                                    height: barHeight - padV * 2, 
+                                    height: barHeight - padV * 2,
                                     child: Row(
                                       children: [
                                         _buildNavItem(

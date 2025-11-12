@@ -1,32 +1,38 @@
 // lib/main.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'login_screen.dart';
 import 'user_provider.dart';
-import 'notification_service.dart'; // <-- trae rootNavigatorKey
-import 'ble_manager.dart';          // <-- registra el servicio BLE global
+import 'notification_service.dart'; // servicio de notificaciones (define rootNavigatorKey)
+import 'ble_manager.dart';          // servicio global para manejar bluetooth (ble)
 
 void main() async {
+  // asegura que los bindings de flutter estén listos antes de inicializar servicios asíncronos
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inicializa notificaciones (canales, acciones, callbacks)
+  // inicializa las notificaciones locales (canales, permisos y callbacks)
   await NotificationService().init();
 
-  // Inicializa formato de fechas (Español Chile)
+  // inicializa los formatos de fecha para español de chile
   await initializeDateFormatting('es_CL', null);
 
+  // lanza la app con múltiples providers globales (user + ble)
   runApp(
     MultiProvider(
       providers: [
+        // proveedor del usuario logueado (nombre, correo, datos de crisis)
         ChangeNotifierProvider(create: (_) => UserProvider()),
-        // Inyecta UserProvider dentro de BleManager para registrar crisis desde el servicio
+
+        // proveedor de bluetooth conectado al estado del usuario
+        // usa proxyprovider para pasarle userProvider dinámicamente al bleManager
         ChangeNotifierProxyProvider<UserProvider, BleManager>(
           create: (_) => BleManager(),
           update: (_, userProv, ble) {
             ble ??= BleManager();
-            ble.userProvider = userProv;
+            ble.userProvider = userProv; // conecta ble con userprovider
             return ble;
           },
         ),
@@ -36,6 +42,7 @@ void main() async {
   );
 }
 
+// widget raíz de la aplicación
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
@@ -44,18 +51,20 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Auna',
 
-      // Usa la MISMA llave global que el NotificationService
+      // usa la misma llave global de navegación que notificationservice
       navigatorKey: rootNavigatorKey,
 
-      // Rutas (incluye la de edición para la acción "Editar")
+      // define rutas adicionales (por ejemplo, la de edición de crisis)
       routes: {
         '/crisis/edit': (ctx) {
+          // extrae argumentos enviados por la notificación
           final args = ModalRoute.of(ctx)!.settings.arguments as Map<dynamic, dynamic>?;
           final crisisId = args?['crisisId'] as String?;
           return EditCrisisScreen(crisisId: crisisId);
         },
       },
 
+      // tema global (colores, tipografía y estilos base)
       theme: ThemeData(
         scaffoldBackgroundColor: Colors.white,
         fontFamily: 'Roboto',
@@ -65,6 +74,8 @@ class MyApp extends StatelessWidget {
           secondary: const Color(0xFFE8E8E8),
           brightness: Brightness.light,
         ),
+
+        // estilo de las appbars
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -76,6 +87,8 @@ class MyApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
+
+        // estilo general para inputs (campos de texto)
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.grey[100],
@@ -85,6 +98,8 @@ class MyApp extends StatelessWidget {
           ),
           hintStyle: TextStyle(color: Colors.grey[400]),
         ),
+
+        // estilo global para botones elevados
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF333A56),
@@ -94,14 +109,18 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
+
+      // pantalla inicial: login
       home: const LoginScreen(),
+
+      // oculta el banner de debug
       debugShowCheckedModeBanner: false,
     );
   }
 }
 
-/// === Placeholder mínimo para la pantalla de edición ===
-/// Reemplázala por tu pantalla real cuando quieras.
+/// pantalla placeholder para editar una crisis
+/// se activa al tocar el botón "editar" desde una notificación
 class EditCrisisScreen extends StatelessWidget {
   final String? crisisId;
   const EditCrisisScreen({super.key, this.crisisId});
@@ -114,17 +133,24 @@ class EditCrisisScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Text('Editando crisis: ${crisisId ?? "(sin id)"}',
-                style: const TextStyle(fontWeight: FontWeight.bold)),
+            // muestra el id recibido (si existe)
+            Text(
+              'Editando crisis: ${crisisId ?? "(sin id)"}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
+
+            // campo de texto para editar notas
             const TextField(
               decoration: InputDecoration(labelText: 'Notas'),
               maxLines: 3,
             ),
             const SizedBox(height: 12),
+
+            // botón para guardar y volver atrás
             ElevatedButton(
               onPressed: () {
-                // TODO: guarda los cambios reales en tu UserProvider o repositorio.
+                // aquí iría la lógica real de guardado (por ejemplo, actualizar userprovider)
                 Navigator.pop(context);
               },
               child: const Text('Guardar'),
