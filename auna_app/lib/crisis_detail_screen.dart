@@ -1,12 +1,14 @@
 // lib/crisis_detail_screen.dart
+
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'user_provider.dart';
 
-// ------------------------------------------------------------
-// Glass brillante (Corregido con .withOpacity())
-// ------------------------------------------------------------
+/// ------------------------------------------------------------
+/// glass brillante (usa .withValues para transparencias finas)
+/// esta clase genera decoraciones tipo "glassmorphism" que reutilizas
+/// ------------------------------------------------------------
 class Glass {
   static BoxDecoration bright({
     double radius = 18,
@@ -14,8 +16,13 @@ class Glass {
     double fillAlpha = .18,
   }) {
     return BoxDecoration(
+      // bordes redondeados suaves
       borderRadius: BorderRadius.circular(radius),
+
+      // borde blanco semitransparente para efecto de vidrio
       border: Border.all(color: Colors.white.withValues(alpha: borderAlpha), width: 1.2),
+
+      // gradiente sutil que da volumen
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -24,6 +31,8 @@ class Glass {
           Colors.white.withValues(alpha: fillAlpha),
         ],
       ),
+
+      // sombra fría para separar del fondo
       boxShadow: [
         BoxShadow(
           color: const Color(0xFFAABEDC).withValues(alpha: 0.25),
@@ -35,6 +44,10 @@ class Glass {
   }
 }
 
+/// ------------------------------------------------------------
+/// contenedor reutilizable con blur de fondo y estilo glass
+/// úsalo como card para agrupar contenido (inputs, botones, etc.)
+/// ------------------------------------------------------------
 class GlassCard extends StatelessWidget {
   final Widget child;
   final EdgeInsets padding;
@@ -52,8 +65,10 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
+      // recorta el blur y el contenido al radio indicado
       borderRadius: BorderRadius.circular(radius),
       child: BackdropFilter(
+        // aplica desenfoque al fondo (efecto vidrio)
         filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
         child: Container(
           decoration: Glass.bright(radius: radius),
@@ -65,9 +80,10 @@ class GlassCard extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------
-// Campo de texto sobre glass
-// ------------------------------------------------------------
+/// ------------------------------------------------------------
+/// campo de texto con estética glass
+/// encapsula estilos de input coherentes con el resto de la ui
+/// ------------------------------------------------------------
 class GlassField extends StatelessWidget {
   final TextEditingController controller;
   final String hint;
@@ -87,9 +103,12 @@ class GlassField extends StatelessWidget {
     return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
       child: TextField(
+        // controlador externo para leer/escribir el valor
         controller: controller,
         keyboardType: keyboardType,
         maxLines: maxLines,
+
+        // estilos del input: sin bordes, tipografía sobria
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(color: Colors.grey.shade600),
@@ -109,9 +128,10 @@ class GlassField extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------
-// Chip brillante (Corregido con .withOpacity())
-// ------------------------------------------------------------
+/// ------------------------------------------------------------
+/// chip con efecto glass y dos estados: seleccionado / normal
+/// útil para seleccionar categorías de forma táctil y legible
+/// ------------------------------------------------------------
 class GlassChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -126,22 +146,28 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // colores base consistentes con la paleta del proyecto
     const accent = Color(0xFFFFADAD);
     const textBase = Color(0xFF38455C);
 
     return GestureDetector(
-      onTap: onTap,
+      onTap: onTap, // dispara el callback cuando se toca el chip
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: AnimatedContainer(
+            // animación suave entre estados seleccionado / normal
             duration: const Duration(milliseconds: 250),
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
             constraints: const BoxConstraints(minHeight: 60),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
+
+              // borde translúcido para reforzar el efecto vidrio
               border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2),
+
+              // cambia de gradiente según el estado seleccionado
               gradient: selected
                   ? LinearGradient(
                       colors: [
@@ -159,6 +185,8 @@ class GlassChip extends StatelessWidget {
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
+
+              // sombra dependiente del estado para jerarquía visual
               boxShadow: [
                 BoxShadow(
                   color: (selected ? accent : const Color(0xFFAABEDC)).withValues(alpha: 0.22),
@@ -188,12 +216,13 @@ class GlassChip extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------
-// Slider brillante (Corregido con .withOpacity())
-// ------------------------------------------------------------
+/// ------------------------------------------------------------
+/// slider de intensidad con estilo glass y etiqueta flotante
+/// bloquea el estilo del slider para que coincida con la paleta
+/// ------------------------------------------------------------
 class IntensitySlider extends StatelessWidget {
-  final double value;
-  final ValueChanged<double> onChanged;
+  final double value;                // valor actual del slider (1..10)
+  final ValueChanged<double> onChanged; // callback al mover el slider
 
   const IntensitySlider({
     super.key,
@@ -207,8 +236,13 @@ class IntensitySlider extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
       child: LayoutBuilder(
         builder: (context, constraints) {
+          // ancho disponible para calcular la posición de la burbuja
           final barWidth = constraints.maxWidth;
+
+          // normalización del valor a 0..1 (1..10 → 0..1)
           final t = ((value.clamp(1, 10)) - 1) / 9;
+
+          // posición horizontal de la etiqueta (resta el diámetro para centrar)
           final pos = (barWidth - 40) * t;
 
           return Column(
@@ -219,6 +253,7 @@ class IntensitySlider extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
+                    // pista base con gradiente tenue
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(999),
@@ -236,6 +271,8 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // slider real con colores y alturas personalizadas
                     Positioned.fill(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
@@ -255,6 +292,8 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
+
+                    // etiqueta circular que muestra el valor (no interactiva)
                     Positioned(
                       left: pos,
                       top: 5,
@@ -296,7 +335,10 @@ class IntensitySlider extends StatelessWidget {
                   ],
                 ),
               ),
+
               const SizedBox(height: 8),
+
+              // etiqueta de sección para claridad
               const Text(
                 'Intensidad del dolor',
                 textAlign: TextAlign.center,
@@ -314,11 +356,12 @@ class IntensitySlider extends StatelessWidget {
   }
 }
 
-// ------------------------------------------------------------
-// Pantalla Detalle de Crisis (ACTUALIZADA PARA EDICIÓN)
-// ------------------------------------------------------------
+/// ------------------------------------------------------------
+/// pantalla de detalle de crisis: sirve para crear o editar registros
+/// si recibe una crisis, precarga los campos y cambia el texto de acción
+/// ------------------------------------------------------------
 class CrisisDetailScreen extends StatefulWidget {
-  // --- ¡NUEVO! Acepta una crisis opcional para editar ---
+  // crisis opcional: si viene, estamos en modo edición
   final CrisisModel? crisisToEdit;
   
   const CrisisDetailScreen({super.key, this.crisisToEdit});
@@ -328,13 +371,22 @@ class CrisisDetailScreen extends StatefulWidget {
 }
 
 class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
+  // estado local de la pantalla
   double _intensity = 5.0;
   final _durationController = TextEditingController(text: '15');
   final _notesController = TextEditingController();
 
-  static const _triggers = [ 'Multitudes','Trabajo','Social','Transporte', 'Familia','Salud','Económico','Otro' ];
-  static const _symptoms = [ 'Taquicardia','Mareo','Sudoración','Temblor','Náuseas', 'Dolor en el pecho','Miedo intenso','Pánico','Tensión muscular','Ansiedad', 'Dificultad para respirar','Sensación de irrealidad', ];
-  
+  // catálogos de opciones (desencadenantes y síntomas)
+  static const _triggers = [
+    'Multitudes','Trabajo','Social','Transporte','Familia','Salud','Económico','Otro'
+  ];
+  static const _symptoms = [
+    'Taquicardia','Mareo','Sudoración','Temblor','Náuseas',
+    'Dolor en el pecho','Miedo intenso','Pánico','Tensión muscular','Ansiedad',
+    'Dificultad para respirar','Sensación de irrealidad',
+  ];
+
+  // ordena síntomas por largo (y luego alfabético) para mejorar legibilidad
   List<String> get _symptomsSorted {
     final list = List<String>.from(_symptoms);
     list.sort((a, b) {
@@ -343,16 +395,17 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     });
     return list;
   }
-  String? _selectedTrigger;
-  final _selectedSymptoms = <String>{};
 
-  // --- ¡NUEVO! Variable para saber si estamos editando ---
-  bool _isEditing = false;
+  String? _selectedTrigger;          // desencadenante elegido
+  final _selectedSymptoms = <String>{}; // conjunto de síntomas elegidos
+
+  bool _isEditing = false; // bandera: modo edición vs creación
 
   @override
   void initState() {
     super.initState();
-    // --- ¡NUEVO! Llenamos los campos si estamos editando ---
+
+    // si recibimos una crisis, precargamos los campos para editar
     if (widget.crisisToEdit != null) {
       _isEditing = true;
       final crisis = widget.crisisToEdit!;
@@ -366,14 +419,17 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
   @override
   void dispose() {
+    // libera controladores de texto para evitar fugas de memoria
     _durationController.dispose();
     _notesController.dispose();
     super.dispose();
   }
 
-  // --- ¡FUNCIÓN _guardar ACTUALIZADA! ---
+  // guarda cambios: si estamos editando, actualiza; si no, crea un registro
   void _guardar() {
     final dur = int.tryParse(_durationController.text) ?? 0;
+
+    // validación mínima: exige desencadenante
     if (_selectedTrigger == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecciona un desencadenante.')),
@@ -382,9 +438,9 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     }
 
     if (_isEditing) {
-      // Si estamos editando, llamamos a 'updateCrisis'
+      // actualiza la crisis existente (requiere id)
       Provider.of<UserProvider>(context, listen: false).updateCrisis(
-        id: widget.crisisToEdit!.id, // Pasamos el ID
+        id: widget.crisisToEdit!.id,
         intensity: _intensity,
         duration: dur,
         notes: _notesController.text,
@@ -392,7 +448,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
         symptoms: _selectedSymptoms.toList(),
       );
     } else {
-      // Si es nueva, llamamos a 'registerCrisis'
+      // crea una nueva crisis con los datos del formulario
       Provider.of<UserProvider>(context, listen: false).registerCrisis(
         intensity: _intensity,
         duration: dur,
@@ -401,9 +457,12 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
         symptoms: _selectedSymptoms.toList(),
       );
     }
+
+    // vuelve a la pantalla anterior tras guardar
     Navigator.of(context).pop();
   }
 
+  // utilitario: distribuye widgets en dos columnas con wrap
   Widget _twoColumnWrap(List<Widget> children) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -419,7 +478,9 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // color base suave para fondo (coherente con la estética calmada)
     const bg = Color(0xFFF0F7FA);
+
     return Scaffold(
       backgroundColor: bg,
       body: SafeArea(
@@ -428,7 +489,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // --- ¡NUEVO! Título dinámico y botón de cerrar ---
+              // encabezado con título dinámico y botón de cierre
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -452,15 +513,20 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              // --- FIN CAMBIO ---
 
-              const Text('Intensidad',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
+              // sección: intensidad (slider)
+              const Text(
+                'Intensidad',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
+              ),
               IntensitySlider(value: _intensity, onChanged: (v) => setState(() => _intensity = v)),
               const SizedBox(height: 20),
 
-              const Text('Duración (segundos)',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
+              // sección: duración (en segundos)
+              const Text(
+                'Duración (segundos)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
+              ),
               GlassField(
                 controller: _durationController,
                 hint: 'Ej: 15',
@@ -468,8 +534,11 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
               ),
               const SizedBox(height: 20),
 
-              const Text('Desencadenante',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
+              // sección: desencadenante (chips en dos columnas)
+              const Text(
+                'Desencadenante',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
+              ),
               _twoColumnWrap(_triggers.map((t) {
                 return GlassChip(
                   label: t,
@@ -479,8 +548,11 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
               }).toList()),
               const SizedBox(height: 20),
 
-              const Text('Síntomas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
+              // sección: síntomas (chips en dos columnas)
+              const Text(
+                'Síntomas',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
+              ),
               _twoColumnWrap(_symptomsSorted.map((s) {
                 final sel = _selectedSymptoms.contains(s);
                 return GlassChip(
@@ -493,8 +565,11 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
               }).toList()),
               const SizedBox(height: 20),
 
-              const Text('Notas',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C))),
+              // sección: notas libres
+              const Text(
+                'Notas',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
+              ),
               GlassField(
                 controller: _notesController,
                 hint: 'Añade cualquier detalle que consideres importante.',
@@ -502,7 +577,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
               ),
               const SizedBox(height: 28),
 
-              // --- ¡NUEVO! Botón de Guardar con texto dinámico ---
+              // botón de acción: guardar o actualizar según el modo
               GestureDetector(
                 onTap: _guardar,
                 child: GlassCard(

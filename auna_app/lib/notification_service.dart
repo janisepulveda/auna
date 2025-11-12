@@ -1,25 +1,28 @@
 // lib/notification_service.dart
+
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-/// Llave global para navegar desde la acción de la notificación
+// llave global que permite navegar desde una notificación
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class NotificationService {
+  // patrón singleton para usar una sola instancia del servicio
   static final NotificationService _i = NotificationService._();
   factory NotificationService() => _i;
   NotificationService._();
 
+  // instancia principal del plugin de notificaciones
   final FlutterLocalNotificationsPlugin _fln =
       FlutterLocalNotificationsPlugin();
 
-  // Canal Android (alto, con heads-up)
+  // definición del canal android (nivel alto con sonido, luz y vibración)
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'auna_crisis',
     'Crisis y alertas',
-    description: 'Notificaciones de crisis detectadas por el amuleto Auna.',
+    description: 'notificaciones de crisis detectadas por el amuleto auna.',
     importance: Importance.max,
     playSound: true,
     enableLights: true,
@@ -27,20 +30,20 @@ class NotificationService {
     showBadge: true,
   );
 
-  /// Inicializa canales, permisos y callbacks
+  // inicializa permisos, canales y callbacks
   Future<void> init() async {
-    // ----- Android: create channel + initialize
+    // configuración inicial android e ios
     const androidInit = AndroidInitializationSettings('ic_launcher'); // usa mipmap/ic_launcher
     const darwinInit = DarwinInitializationSettings(
       requestAlertPermission: false,
       requestBadgePermission: false,
       requestSoundPermission: false,
-      // categorías opcionales si luego agregas más acciones
     );
 
     const initSettings =
         InitializationSettings(android: androidInit, iOS: darwinInit);
 
+    // inicializa el plugin con los callbacks definidos
     await _fln.initialize(
       initSettings,
       onDidReceiveNotificationResponse: _onTapNotification,
@@ -48,13 +51,13 @@ class NotificationService {
     );
 
     if (Platform.isAndroid) {
-      // crear canal una sola vez
+      // crea el canal si no existe
       await _fln
           .resolvePlatformSpecificImplementation<
               AndroidFlutterLocalNotificationsPlugin>()
           ?.createNotificationChannel(_channel);
 
-      // Android 13+ (Tiramisu): pedir permiso de notificaciones
+      // para android 13 o superior: pedir permiso de notificaciones
       final notifGranted = await Permission.notification.isGranted;
       if (!notifGranted) {
         await Permission.notification.request();
@@ -62,7 +65,7 @@ class NotificationService {
     }
 
     if (Platform.isIOS) {
-      // iOS: pedir permisos
+      // solicita permisos en ios
       await _fln
           .resolvePlatformSpecificImplementation<
               IOSFlutterLocalNotificationsPlugin>()
@@ -70,12 +73,12 @@ class NotificationService {
     }
   }
 
-  /// Muestra una notificación de crisis con botón "Editar"
-  /// [crisis] puede ser tu objeto o un Map con 'id' (lo usamos como payload).
+  // muestra una notificación de crisis con un botón "editar"
+  // [crisis] puede ser un objeto o un mapa con una clave 'id'
   Future<void> showCrisisNotification(dynamic crisis) async {
     final String crisisId = _extractCrisisId(crisis);
 
-    // ANDROID
+    // configuración android
     final androidDetails = AndroidNotificationDetails(
       _channel.id,
       _channel.name,
@@ -85,7 +88,7 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
       category: AndroidNotificationCategory.recommendation, // heads-up
-      // Acción "Editar" (abre la app con payload)
+      // acción adicional que aparece en la notificación
       actions: <AndroidNotificationAction>[
         const AndroidNotificationAction(
           'EDITAR_CRISIS',
@@ -96,7 +99,7 @@ class NotificationService {
       ],
     );
 
-    // iOS: forzar presentación también en foreground
+    // configuración ios (permite mostrar alerta en foreground)
     const iosDetails = DarwinNotificationDetails(
       presentAlert: true,
       presentSound: true,
@@ -110,57 +113,55 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    // muestra la notificación con id y payload únicos
     await _fln.show(
-      // id único (puedes usar un hash si quieres)
       DateTime.now().millisecondsSinceEpoch.remainder(100000),
       'Crisis registrada',
       'Se registró correctamente. Toca para editar.',
       details,
-      payload: crisisId, // <-- se usa en el callback para navegar
+      payload: crisisId, // se usa en el callback para navegar
     );
   }
 
-  /// (Opcional) test rápido
+  // función opcional de prueba rápida
   Future<void> showTest() async {
     await showCrisisNotification({'id': 'test'});
   }
 
-  // ========= Callbacks =========
+  // ======== callbacks ========
 
-  // Tap en la notificación (app en foreground/background)
+  // se ejecuta cuando el usuario toca la notificación (app abierta o en segundo plano)
   void _onTapNotification(NotificationResponse r) {
-    final payload = r.payload; // nuestro crisisId
-    // Si el usuario tocó la acción "Editar" o el cuerpo de la notificación
+    final payload = r.payload; // id de la crisis
     if (payload != null && payload.isNotEmpty) {
       _goToEdit(payload);
     }
   }
 
-  // Tap en background isolate (Android)
+  // se ejecuta cuando se toca la notificación mientras la app está en background isolate (solo android)
   @pragma('vm:entry-point')
   static void _onTapNotificationBackground(NotificationResponse r) {
-    // En background solo podemos almacenar/reenviar; aquí lo delegamos a _i
     final payload = r.payload;
     if (payload != null && payload.isNotEmpty) {
-      // No podemos navegar aquí directamente; la navegación real ocurrirá
-      // cuando la app vuelva al foreground. Guardar estado global si se desea.
-      // Para simplificar, intentaremos navegar si hay navigatorKey listo:
+      // en background no se puede navegar directamente;
+      // se delega a la instancia principal cuando la app vuelve al foreground
       _i._goToEdit(payload);
     }
   }
 
+  // navega hacia la pantalla de edición de crisis
   void _goToEdit(String crisisId) {
     final nav = rootNavigatorKey.currentState;
     if (nav == null) return;
-    // Si la app no tiene una ruta abierta aún, un pequeño delay ayuda
+    // usa un microtask para asegurar que el contexto esté disponible
     Future.microtask(() {
       nav.pushNamed('/crisis/edit', arguments: {'crisisId': crisisId});
     });
   }
 
+  // obtiene el id de la crisis desde un objeto o un mapa
   String _extractCrisisId(dynamic crisis) {
     try {
-      // Si es tu modelo y tiene "id"
       if (crisis != null && crisis.id != null) return crisis.id.toString();
     } catch (_) {}
     try {
@@ -168,7 +169,7 @@ class NotificationService {
         return crisis['id'].toString();
       }
     } catch (_) {}
-    // fallback
+    // si no se encuentra id, genera uno temporal
     return DateTime.now().millisecondsSinceEpoch.toString();
-    }
+  }
 }
