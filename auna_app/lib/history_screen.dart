@@ -1,5 +1,5 @@
 // lib/history_screen.dart
-import 'package:flutter/material.dart'; // <-- ¡ESTA ES LA LÍNEA MÁS IMPORTANTE!
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -18,8 +18,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   DateTime? _selectedDay;
   List<CrisisModel> _selectedDayCrises = [];
 
-  // --- Tu color Rosado de Flor de Loto ---
+  // Color rosado de flor de loto
   final Color lotusPink = const Color(0xFFFFADAD);
+
+  // Color de fondo solicitado
+  final Color backgroundSoftBlue = const Color(0xFFAABEDC).withValues(alpha: 0.12);
 
   @override
   void initState() {
@@ -27,14 +30,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     _selectedDay = _focusedDay;
     initializeDateFormatting('es_CL', null);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if(mounted) { // Agregamos un chequeo de seguridad
+      if (mounted) {
         _updateSelectedDayCrises(_selectedDay!);
       }
     });
   }
 
   void _updateSelectedDayCrises(DateTime selectedDay) {
-    if(!mounted) return; // Chequeo de seguridad
+    if (!mounted) return;
     final userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
       _selectedDayCrises = userProvider.registeredCrises.where((crisis) {
@@ -51,7 +54,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
 
     Future.delayed(const Duration(milliseconds: 100), () {
-      if (mounted) { // Chequeo de seguridad
+      if (mounted) {
         _showCrisisDetailSheet(selectedDay);
       }
     });
@@ -60,16 +63,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void _showCrisisDetailSheet(DateTime day) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, 
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.4, 
-          minChildSize: 0.3, 
-          maxChildSize: 0.6, 
+          initialChildSize: 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.6,
           builder: (BuildContext context, ScrollController scrollController) {
             return Container(
               padding: const EdgeInsets.all(16.0),
@@ -97,7 +101,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const Divider(color: Colors.black26),
                   const SizedBox(height: 8),
-                  
                   Expanded(
                     child: _selectedDayCrises.isEmpty
                         ? const Center(
@@ -121,15 +124,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundSoftBlue, // <--- Fondo azul suave con transparencia
       appBar: AppBar(
         title: const Text('Historial'),
-        backgroundColor: Colors.white,
-        elevation: 1,
+        backgroundColor: backgroundSoftBlue, // <--- También en el AppBar
+        elevation: 0,
         foregroundColor: Colors.black,
       ),
       body: Column(
@@ -143,8 +145,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
             onDaySelected: _onDaySelected,
             eventLoader: (day) {
-              // No es necesario leer el provider aquí si no lo usamos para 'builder'
-              // Lo leeremos dentro del _onDaySelected
               final userProvider = Provider.of<UserProvider>(context, listen: false);
               return userProvider.registeredCrises
                   .where((c) => isSameDay(c.date, day))
@@ -166,11 +166,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 shape: BoxShape.circle,
               ),
               selectedDecoration: BoxDecoration(
-                color: lotusPink, // Día seleccionado en rosado
+                color: lotusPink,
                 shape: BoxShape.circle,
               ),
               markerDecoration: BoxDecoration(
-                color: lotusPink.withAlpha(200), // Marcador de crisis en rosado
+                color: lotusPink.withAlpha(200),
                 shape: BoxShape.circle,
               ),
               markersMaxCount: 1,
@@ -237,7 +237,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 1),
           decoration: BoxDecoration(
             color: index < intensity
-                ? lotusPink // Barra de intensidad en rosado
+                ? lotusPink
                 : Colors.grey.shade300,
             borderRadius: BorderRadius.circular(2),
           ),
