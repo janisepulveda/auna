@@ -98,7 +98,9 @@ class GlassField extends StatelessWidget {
         maxLines: maxLines,
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: TextStyle(color: Colors.grey.shade600),
+          hintStyle: TextStyle(
+            color: Colors.white.withValues(alpha: 0.6),
+          ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
@@ -107,7 +109,7 @@ class GlassField extends StatelessWidget {
           contentPadding: EdgeInsets.zero,
         ),
         style: const TextStyle(
-          color: Color(0xFF38455C),
+          color: Colors.white,
           height: 1.25,
         ),
       ),
@@ -132,8 +134,9 @@ class GlassChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const accent = Color(0xFFFFADAD);
-    const textBase = Color(0xFF38455C);
+    // nuevo acento verde
+    const accent = Color(0xFF748204);
+    const textBase = Colors.white;
 
     return GestureDetector(
       onTap: onTap,
@@ -152,10 +155,10 @@ class GlassChip extends StatelessWidget {
                 width: 1.2,
               ),
               gradient: selected
-                  ? const LinearGradient(
+                  ? LinearGradient(
                       colors: [
-                        Color(0xFFFFADAD),
-                        Color(0xFFF2B0B5),
+                        accent.withValues(alpha: 0.95),
+                        accent.withValues(alpha: 0.85),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -190,7 +193,7 @@ class GlassChip extends StatelessWidget {
                   height: 1.2,
                   color: selected
                       ? Colors.white
-                      : textBase.withValues(alpha: 0.95),
+                      : textBase.withValues(alpha: 0.9),
                   fontWeight:
                       selected ? FontWeight.w700 : FontWeight.w500,
                 ),
@@ -204,7 +207,7 @@ class GlassChip extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Slider brillante
+// Slider brillante (verde)
 // ------------------------------------------------------------
 class IntensitySlider extends StatelessWidget {
   final double value;
@@ -218,6 +221,8 @@ class IntensitySlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const accent = Color(0xFF748204); // verde AUNA
+
     return GlassCard(
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 14),
       child: LayoutBuilder(
@@ -234,6 +239,7 @@ class IntensitySlider extends StatelessWidget {
                 child: Stack(
                   alignment: Alignment.centerLeft,
                   children: [
+                    // barra glass de fondo
                     Positioned.fill(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(999),
@@ -251,17 +257,18 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // slider real
                     Positioned.fill(
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 12,
-                          activeTrackColor: const Color(0xFFF2B0B5)
-                              .withValues(alpha: 0.9),
+                          activeTrackColor:
+                              accent.withValues(alpha: 0.9), // verde activo
                           inactiveTrackColor:
                               Colors.white.withValues(alpha: 0.25),
-                          thumbColor: const Color(0xFFFFADAD),
-                          overlayColor: const Color(0xFFFFADAD)
-                              .withValues(alpha: 0.18),
+                          thumbColor: accent, // bolita verde
+                          overlayColor:
+                              accent.withValues(alpha: 0.18), // halo verde
                           showValueIndicator: ShowValueIndicator.never,
                         ),
                         child: Slider(
@@ -273,6 +280,7 @@ class IntensitySlider extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // “burbujita” con el número
                     Positioned(
                       left: pos,
                       top: 5,
@@ -288,28 +296,46 @@ class IntensitySlider extends StatelessWidget {
                               color: Colors.white.withValues(alpha: 0.6),
                               width: 1.3,
                             ),
-                            gradient: const LinearGradient(
+                            gradient: LinearGradient(
                               colors: [
-                                Color(0xFFFFADAD),
-                                Color(0xFFF2B0B5),
+                                accent.withValues(alpha: 0.95),
+                                accent.withValues(alpha: 0.8),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF2B0B5)
-                                    .withValues(alpha: 0.35),
+                                color:
+                                    accent.withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
                             ],
                           ),
-                          child: Text(
-                            '${value.round()}',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
+                          child: const Text(
+                            // número en verde sólido
+                            '',
+                          ),
+                        ),
+                      ),
+                    ),
+                    // número encima para que quede siempre legible
+                    Positioned(
+                      left: pos,
+                      top: 5,
+                      child: IgnorePointer(
+                        ignoring: true,
+                        child: SizedBox(
+                          width: 40,
+                          height: 40,
+                          child: Center(
+                            child: Text(
+                              '${value.round()}',
+                              style: const TextStyle(
+                                color: Color.fromARGB(255, 255, 255, 255),
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
                           ),
                         ),
@@ -325,7 +351,7 @@ class IntensitySlider extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF38455C),
+                  color: Colors.white, // label del slider en blanco
                 ),
               ),
             ],
@@ -462,6 +488,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     Navigator.of(context).pop();
   }
 
+  // wrap genérico en N columnas
   Widget _wrapWithColumns(List<Widget> children, {int columns = 3}) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -520,8 +547,11 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
                           padding: EdgeInsets.all(10),
                           radius: 99,
                           blur: 10,
-                          child: Icon(Icons.close,
-                              color: Color(0xFF38455C), size: 18),
+                          child: Icon(
+                            Icons.close,
+                            color: Color.fromARGB(255, 255, 255, 255),
+                            size: 18,
+                          ),
                         ),
                       ),
                     ],
@@ -637,21 +667,19 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
                   GestureDetector(
                     onTap: _guardar,
-                    child: GlassCard(
+                    child: const GlassCard(
                       blur: 20,
                       radius: 20,
-                      child: Container(
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 16),
-                        child: Text(
-                          _isEditing
-                              ? 'Actualizar Registro'
-                              : 'Guardar Registro',
-                          style: const TextStyle(
-                            color: Color(0xFF2E3A55),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Center(
+                          child: Text(
+                            'Guardar Registro',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
                       ),

@@ -26,7 +26,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<CrisisModel> _selectedDayCrises = [];
 
   // rosa lotus de la paleta
-  final Color lotusPink = const Color(0xFFFFADAD);
+  final Color lotusPink = const Color(0xFF748204);
 
   @override
   void initState() {
@@ -167,20 +167,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(height: 20),
 
                   // tarjeta "glass" con el calendario
-                  Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(24),
-                        color: Colors.black.withValues(alpha:0.18),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.35),
-                          width: 1.2,
-                        ),
+                  Container(
+                    height: MediaQuery.of(context).size.height * 0.50, // <-- ACORTADO (antes llenaba todo)
+                    padding: const EdgeInsets.all(18),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      color: Colors.black.withValues(alpha: 0.18),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.35),
+                        width: 1.2,
                       ),
-                      child: _buildCalendar(context),
                     ),
+                    child: _buildCalendar(context),
                   ),
+
                 ],
               ),
             ),
