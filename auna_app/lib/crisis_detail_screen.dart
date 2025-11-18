@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'user_provider.dart';
 
+// === fondo global ===
+const String kBackgroundAsset = 'assets/imagenes/fondo.JPG';
+
 // ------------------------------------------------------------
 // Glass brillante
 // ------------------------------------------------------------
@@ -15,7 +18,10 @@ class Glass {
   }) {
     return BoxDecoration(
       borderRadius: BorderRadius.circular(radius),
-      border: Border.all(color: Colors.white.withValues(alpha: borderAlpha), width: 1.2),
+      border: Border.all(
+        color: Colors.white.withValues(alpha: borderAlpha),
+        width: 1.2,
+      ),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
@@ -141,12 +147,15 @@ class GlassChip extends StatelessWidget {
             constraints: const BoxConstraints(minHeight: 60),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.2),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.6),
+                width: 1.2,
+              ),
               gradient: selected
-                  ? LinearGradient(
+                  ? const LinearGradient(
                       colors: [
-                        accent.withValues(alpha: 0.9),
-                        const Color(0xFFF2B0B5).withValues(alpha: 0.85),
+                        Color(0xFFFFADAD),
+                        Color(0xFFF2B0B5),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -161,7 +170,10 @@ class GlassChip extends StatelessWidget {
                     ),
               boxShadow: [
                 BoxShadow(
-                  color: (selected ? accent : const Color(0xFFAABEDC)).withValues(alpha: 0.22),
+                  color: (selected
+                          ? accent
+                          : const Color(0xFFAABEDC))
+                      .withValues(alpha: 0.22),
                   blurRadius: 20,
                   offset: const Offset(0, 6),
                 ),
@@ -176,8 +188,11 @@ class GlassChip extends StatelessWidget {
                 overflow: TextOverflow.visible,
                 style: TextStyle(
                   height: 1.2,
-                  color: selected ? Colors.white : textBase.withValues(alpha: 0.95),
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  color: selected
+                      ? Colors.white
+                      : textBase.withValues(alpha: 0.95),
+                  fontWeight:
+                      selected ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),
             ),
@@ -189,7 +204,7 @@ class GlassChip extends StatelessWidget {
 }
 
 // ------------------------------------------------------------
-// Slider brillante (tu slider original)
+// Slider brillante
 // ------------------------------------------------------------
 class IntensitySlider extends StatelessWidget {
   final double value;
@@ -240,10 +255,13 @@ class IntensitySlider extends StatelessWidget {
                       child: SliderTheme(
                         data: SliderTheme.of(context).copyWith(
                           trackHeight: 12,
-                          activeTrackColor: const Color(0xFFF2B0B5).withValues(alpha: 0.9),
-                          inactiveTrackColor: Colors.white.withValues(alpha: 0.25),
+                          activeTrackColor: const Color(0xFFF2B0B5)
+                              .withValues(alpha: 0.9),
+                          inactiveTrackColor:
+                              Colors.white.withValues(alpha: 0.25),
                           thumbColor: const Color(0xFFFFADAD),
-                          overlayColor: const Color(0xFFFFADAD).withValues(alpha: 0.18),
+                          overlayColor: const Color(0xFFFFADAD)
+                              .withValues(alpha: 0.18),
                           showValueIndicator: ShowValueIndicator.never,
                         ),
                         child: Slider(
@@ -266,18 +284,22 @@ class IntensitySlider extends StatelessWidget {
                           alignment: Alignment.center,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 1.3),
-                            gradient: LinearGradient(
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.6),
+                              width: 1.3,
+                            ),
+                            gradient: const LinearGradient(
                               colors: [
-                                const Color(0xFFFFADAD).withValues(alpha: 0.95),
-                                const Color(0xFFF2B0B5).withValues(alpha: 0.9),
+                                Color(0xFFFFADAD),
+                                Color(0xFFF2B0B5),
                               ],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFF2B0B5).withValues(alpha: 0.35),
+                                color: const Color(0xFFF2B0B5)
+                                    .withValues(alpha: 0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 6),
                               ),
@@ -319,7 +341,7 @@ class IntensitySlider extends StatelessWidget {
 // ------------------------------------------------------------
 class CrisisDetailScreen extends StatefulWidget {
   final CrisisModel? crisisToEdit;
-  
+
   const CrisisDetailScreen({super.key, this.crisisToEdit});
 
   @override
@@ -331,7 +353,6 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
   final _durationController = TextEditingController(text: '15');
   final _notesController = TextEditingController();
 
-  // duración categórica
   static const _durationOptions = [
     {'label': 'Segundos', 'value': 15},
     {'label': '< 1 min', 'value': 45},
@@ -341,10 +362,16 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
   String? _selectedDurationLabel;
 
   static const _triggers = [
-    'Multitudes','Trabajo','Social','Transporte','Familia','Salud','Económico','Otro'
+    'Multitudes',
+    'Trabajo',
+    'Social',
+    'Transporte',
+    'Familia',
+    'Salud',
+    'Económico',
+    'Otro'
   ];
 
-  // síntomas SIN los dos largos
   static const _symptoms = [
     'Taquicardia',
     'Mareo',
@@ -357,7 +384,7 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     'Tensión muscular',
     'Ansiedad',
   ];
-  
+
   List<String> get _symptomsSorted {
     final list = List<String>.from(_symptoms);
     list.sort((a, b) {
@@ -435,7 +462,6 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
     Navigator.of(context).pop();
   }
 
-  // wrap genérico en N columnas
   Widget _wrapWithColumns(List<Widget> children, {int columns = 3}) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -444,7 +470,8 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
         return Wrap(
           spacing: spacing,
           runSpacing: spacing,
-          children: children.map((c) => SizedBox(width: w, child: c)).toList(),
+          children:
+              children.map((c) => SizedBox(width: w, child: c)).toList(),
         );
       },
     );
@@ -452,149 +479,189 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    const bg = Color(0xFFF0F7FA);
     return Scaffold(
-      backgroundColor: bg,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // === Fondo global ===
+          Image.asset(
+            kBackgroundAsset,
+            fit: BoxFit.cover,
+          ),
+          // === Contenido sobre safe area ===
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _isEditing ? 'Editar Crisis' : 'Detalle de crisis',
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF38455C),
+                  // header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          _isEditing
+                              ? 'Editar Crisis'
+                              : 'Detalle de crisis',
+                          textAlign: TextAlign.left,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFF6F7FB),
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: const GlassCard(
+                          padding: EdgeInsets.all(10),
+                          radius: 99,
+                          blur: 10,
+                          child: Icon(Icons.close,
+                              color: Color(0xFF38455C), size: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    'Intensidad',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF6F7FB),
                     ),
                   ),
+                  IntensitySlider(
+                    value: _intensity,
+                    onChanged: (v) => setState(() => _intensity = v),
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Duración aproximada del episodio',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF6F7FB),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _wrapWithColumns(
+                    _durationOptions.map((opt) {
+                      final label = opt['label'] as String;
+                      final value = opt['value'] as int;
+                      final selected =
+                          _selectedDurationLabel == label;
+                      return GlassChip(
+                        label: label,
+                        selected: selected,
+                        onTap: () {
+                          setState(() {
+                            _selectedDurationLabel = label;
+                            _durationController.text =
+                                value.toString();
+                          });
+                        },
+                      );
+                    }).toList(),
+                    columns: 2,
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Desencadenante',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF6F7FB),
+                    ),
+                  ),
+                  _wrapWithColumns(
+                    _triggers.map((t) {
+                      return GlassChip(
+                        label: t,
+                        selected: _selectedTrigger == t,
+                        onTap: () =>
+                            setState(() => _selectedTrigger = t),
+                      );
+                    }).toList(),
+                    columns: 3,
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Síntomas',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF6F7FB),
+                    ),
+                  ),
+                  _wrapWithColumns(
+                    _symptomsSorted.map((s) {
+                      final sel = _selectedSymptoms.contains(s);
+                      return GlassChip(
+                        label: s,
+                        selected: sel,
+                        onTap: () => setState(() {
+                          sel
+                              ? _selectedSymptoms.remove(s)
+                              : _selectedSymptoms.add(s);
+                        }),
+                      );
+                    }).toList(),
+                    columns: 3,
+                  ),
+                  const SizedBox(height: 20),
+
+                  const Text(
+                    'Notas',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFFF6F7FB),
+                    ),
+                  ),
+                  GlassField(
+                    controller: _notesController,
+                    hint:
+                        'Añade cualquier detalle que consideres importante.',
+                    maxLines: 4,
+                  ),
+                  const SizedBox(height: 28),
+
                   GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: const GlassCard(
-                      padding: EdgeInsets.all(10),
-                      radius: 99,
-                      blur: 10,
-                      child: Icon(Icons.close, color: Color(0xFF38455C), size: 18),
+                    onTap: _guardar,
+                    child: GlassCard(
+                      blur: 20,
+                      radius: 20,
+                      child: Container(
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 16),
+                        child: Text(
+                          _isEditing
+                              ? 'Actualizar Registro'
+                              : 'Guardar Registro',
+                          style: const TextStyle(
+                            color: Color(0xFF2E3A55),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
-
-              // intensidad
-              const Text(
-                'Intensidad',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
-              ),
-              IntensitySlider(
-                value: _intensity,
-                onChanged: (v) => setState(() => _intensity = v),
-              ),
-              const SizedBox(height: 20),
-
-              // duración categórica (2 columnas)
-              const Text(
-                'Duración aproximada del episodio',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
-              ),
-              const SizedBox(height: 8),
-              _wrapWithColumns(
-                _durationOptions.map((opt) {
-                  final label = opt['label'] as String;
-                  final value = opt['value'] as int;
-                  final selected = _selectedDurationLabel == label;
-                  return GlassChip(
-                    label: label,
-                    selected: selected,
-                    onTap: () {
-                      setState(() {
-                        _selectedDurationLabel = label;
-                        _durationController.text = value.toString();
-                      });
-                    },
-                  );
-                }).toList(),
-                columns: 2,
-              ),
-              const SizedBox(height: 20),
-
-              // desencadenantes (3 columnas)
-              const Text(
-                'Desencadenante',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
-              ),
-              _wrapWithColumns(
-                _triggers.map((t) {
-                  return GlassChip(
-                    label: t,
-                    selected: _selectedTrigger == t,
-                    onTap: () => setState(() => _selectedTrigger = t),
-                  );
-                }).toList(),
-                columns: 3,
-              ),
-              const SizedBox(height: 20),
-
-              // síntomas (3 columnas)
-              const Text(
-                'Síntomas',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
-              ),
-              _wrapWithColumns(
-                _symptomsSorted.map((s) {
-                  final sel = _selectedSymptoms.contains(s);
-                  return GlassChip(
-                    label: s,
-                    selected: sel,
-                    onTap: () => setState(() {
-                      sel ? _selectedSymptoms.remove(s) : _selectedSymptoms.add(s);
-                    }),
-                  );
-                }).toList(),
-                columns: 3,
-              ),
-              const SizedBox(height: 20),
-
-              // notas
-              const Text(
-                'Notas',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF38455C)),
-              ),
-              GlassField(
-                controller: _notesController,
-                hint: 'Añade cualquier detalle que consideres importante.',
-                maxLines: 4,
-              ),
-              const SizedBox(height: 28),
-
-              // botón
-              GestureDetector(
-                onTap: _guardar,
-                child: GlassCard(
-                  blur: 20,
-                  radius: 20,
-                  child: Container(
-                    alignment: Alignment.center,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Text(
-                      _isEditing ? 'Actualizar Registro' : 'Guardar Registro',
-                      style: const TextStyle(
-                        color: Color(0xFF2E3A55),
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

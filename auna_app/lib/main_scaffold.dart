@@ -25,7 +25,6 @@ class _MainScaffoldState extends State<MainScaffold> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // TODO: si quieres, pon aquí un color de fondo base
       body: Stack(
         children: [
           // ===== scroll horizontal entre pantallas =====

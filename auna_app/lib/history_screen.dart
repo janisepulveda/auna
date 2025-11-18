@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
+
 import 'user_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
@@ -24,22 +25,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // lista de crisis filtradas para el día seleccionado
   List<CrisisModel> _selectedDayCrises = [];
 
-  // color rosado de la paleta (marcadores y selección)
+  // rosa lotus de la paleta
   final Color lotusPink = const Color(0xFFFFADAD);
-
-  // color de fondo suave solicitado (azul pálido translúcido)
-  final Color backgroundSoftBlue = const Color(0xFFAABEDC).withValues(alpha: 0.12);
 
   @override
   void initState() {
     super.initState();
-    // por defecto, seleccionamos el día enfocado actual
     _selectedDay = _focusedDay;
 
     // inicializa formatos regionales (fechas en español chile)
     initializeDateFormatting('es_CL', null);
 
-    // después del primer frame, sincroniza la lista de crisis del día
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         _updateSelectedDayCrises(_selectedDay!);
@@ -66,7 +62,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _updateSelectedDayCrises(selectedDay);
     });
 
-    // pequeño retardo para que el calendario aplique la selección
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         _showCrisisDetailSheet(selectedDay);
@@ -74,11 +69,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
-  // muestra un bottom sheet con los episodios del día seleccionado
+  // bottom sheet con los episodios del día
   void _showCrisisDetailSheet(DateTime day) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // permite que el sheet sea alto si hay muchos ítems
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -86,16 +81,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.4, // altura inicial (40% de la pantalla)
-          minChildSize: 0.3,     // altura mínima
-          maxChildSize: 0.6,     // altura máxima
+          initialChildSize: 0.4,
+          minChildSize: 0.3,
+          maxChildSize: 0.6,
           builder: (BuildContext context, ScrollController scrollController) {
             return Container(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // tirador visual para indicar que el sheet es arrastrable
                   Center(
                     child: Container(
                       width: 40,
@@ -107,8 +101,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // título con la fecha formateada en español
                   Text(
                     "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
                     style: const TextStyle(
@@ -117,18 +109,16 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       color: Colors.black87,
                     ),
                   ),
-
                   const Divider(color: Colors.black26),
                   const SizedBox(height: 8),
-
-                  // lista de episodios del día o mensaje vacío si no hay datos
                   Expanded(
                     child: _selectedDayCrises.isEmpty
                         ? const Center(
-                            child: Text('No hay episodios registrados para este día.'),
+                            child:
+                                Text('No hay episodios registrados para este día.'),
                           )
                         : ListView.builder(
-                            controller: scrollController, // integra con el sheet arrastrable
+                            controller: scrollController,
                             itemCount: _selectedDayCrises.length,
                             itemBuilder: (context, index) {
                               final crisis = _selectedDayCrises[index];
@@ -148,66 +138,51 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // aplica el fondo azul suave en toda la pantalla
-      backgroundColor: backgroundSoftBlue,
-      appBar: AppBar(
-        title: const Text('Historial'),
-        // mismo color en el appbar para continuidad visual
-        backgroundColor: backgroundSoftBlue,
-        elevation: 0,
-        foregroundColor: Colors.black,
-      ),
-      body: Column(
+      // dejamos transparente para que se vea el fondo
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
         children: [
-          // calendario mensual con eventos cargados desde el provider
-          TableCalendar(
-            locale: 'es_CL', // localización en español (chile)
-            firstDay: DateTime.utc(2020, 1, 1), // límite inferior de navegación
-            lastDay: DateTime.now().add(const Duration(days: 365)), // un año hacia adelante
-            focusedDay: _focusedDay,
-            calendarFormat: CalendarFormat.month,
+          // ===== FONDO JPG A PANTALLA COMPLETA =====
+          Image.asset(
+            'assets/imagenes/fondo.JPG', // ojo con mayúsculas en pubspec
+            fit: BoxFit.cover,
+          ),
 
-            // indica cuál día se considera seleccionado
-            selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+          // ===== CONTENIDO =====
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              child: Column(
+                children: [
+                  // título
+                  const Text(
+                    'Historial',
+                    style: TextStyle(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
 
-            // notifica selección de día y actualiza la lista
-            onDaySelected: _onDaySelected,
-
-            // devuelve la lista de eventos (crisis) por día para mostrar marcadores
-            eventLoader: (day) {
-              final userProvider = Provider.of<UserProvider>(context, listen: false);
-              return userProvider.registeredCrises
-                  .where((c) => isSameDay(c.date, day))
-                  .toList();
-            },
-
-            // estilos del encabezado del calendario
-            headerStyle: const HeaderStyle(
-              titleCentered: true,
-              formatButtonVisible: false,
-              titleTextStyle: TextStyle(fontSize: 20.0, color: Colors.black87),
-              leftChevronIcon: Icon(Icons.chevron_left, color: Colors.black87),
-              rightChevronIcon: Icon(Icons.chevron_right, color: Colors.black87),
-            ),
-
-            // estilos de celdas, selección, hoy y marcadores
-            calendarStyle: CalendarStyle(
-              defaultTextStyle: const TextStyle(color: Colors.black87),
-              weekendTextStyle: TextStyle(color: lotusPink.withAlpha(200)),
-              outsideTextStyle: TextStyle(color: Colors.grey[400]),
-              todayDecoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.secondary,
-                shape: BoxShape.circle,
+                  // tarjeta "glass" con el calendario
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(18),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(24),
+                        color: Colors.black.withValues(alpha:0.18),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.35),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: _buildCalendar(context),
+                    ),
+                  ),
+                ],
               ),
-              selectedDecoration: BoxDecoration(
-                color: lotusPink, // resalta el día seleccionado con rosado
-                shape: BoxShape.circle,
-              ),
-              markerDecoration: BoxDecoration(
-                color: lotusPink.withAlpha(200), // color de los puntos de evento
-                shape: BoxShape.circle,
-              ),
-              markersMaxCount: 1, // máximo un marcador por día para no saturar
             ),
           ),
         ],
@@ -215,7 +190,102 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // construye un ítem de la lista de episodios con hora, duración e intensidad
+  Widget _buildCalendar(BuildContext context) {
+    return TableCalendar(
+      locale: 'es_CL',
+      firstDay: DateTime.utc(2020, 1, 1),
+      lastDay: DateTime.now().add(const Duration(days: 365)),
+      focusedDay: _focusedDay,
+      calendarFormat: CalendarFormat.month,
+
+      selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+      onDaySelected: _onDaySelected,
+
+      eventLoader: (day) {
+        final userProvider = Provider.of<UserProvider>(context, listen: false);
+        return userProvider.registeredCrises
+            .where((c) => isSameDay(c.date, day))
+            .toList();
+      },
+
+      headerStyle: const HeaderStyle(
+        titleCentered: true,
+        formatButtonVisible: false,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+        ),
+        leftChevronIcon: Icon(Icons.chevron_left, color: Colors.white),
+        rightChevronIcon: Icon(Icons.chevron_right, color: Colors.white),
+      ),
+
+      // nombres de los días de la semana
+      daysOfWeekStyle: DaysOfWeekStyle(
+        weekdayStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+        weekendStyle: TextStyle(
+          color: lotusPink,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+
+      calendarStyle: CalendarStyle(
+        // días normales
+        defaultTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.w500,
+        ),
+        // sábados y domingos
+        weekendTextStyle: TextStyle(
+          color: lotusPink,
+          fontWeight: FontWeight.w500,
+        ),
+        // días de otros meses
+        outsideTextStyle: TextStyle(
+          color: Colors.white.withValues(alpha: 0.35),
+          fontWeight: FontWeight.w400,
+        ),
+
+        // día de hoy (puede ser un borde muy sutil si quieres)
+        todayDecoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.6),
+            width: 1.2,
+          ),
+          color: Colors.transparent,
+        ),
+        todayTextStyle: const TextStyle(color: Colors.white),
+
+        // SELECCIÓN: círculo SOLO CON BORDE ROSADO
+        selectedDecoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: lotusPink,
+            width: 2,
+          ),
+          color: Colors
+              .transparent, // sin relleno para que se vea solo el contorno
+        ),
+        selectedTextStyle: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+
+        // marcadores de eventos
+        markerDecoration: BoxDecoration(
+          color: lotusPink,
+          shape: BoxShape.circle,
+        ),
+        markersMaxCount: 1,
+      ),
+    );
+  }
+
+  // tarjeta de episodio individual
   Widget _buildCrisisListItem(CrisisModel crisis) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -224,12 +294,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            // bloque de hora y duración
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  DateFormat.Hm().format(crisis.date), // hora en formato 24h
+                  DateFormat.Hm().format(crisis.date),
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -243,10 +312,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 ),
               ],
             ),
-
             const Spacer(),
-
-            // bloque de barra + valor de intensidad
             Row(
               children: [
                 _buildIntensityBar(crisis.intensity),
@@ -267,7 +333,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // dibuja una barra discreta de 10 segmentos para la intensidad
+  // barra de intensidad
   Widget _buildIntensityBar(double intensity) {
     return Row(
       children: List.generate(10, (index) {
@@ -277,8 +343,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           margin: const EdgeInsets.symmetric(horizontal: 1),
           decoration: BoxDecoration(
             color: index < intensity
-                ? lotusPink               // segmentos activos en rosado
-                : Colors.grey.shade300,    // segmentos inactivos en gris claro
+                ? lotusPink
+                : Colors.grey.shade300,
             borderRadius: BorderRadius.circular(2),
           ),
         );
