@@ -58,7 +58,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                       height: 6,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(3),
-                        color: Colors.white.withOpacity(isActive ? 0.9 : 0.35),
+                        color: Colors.white.withAlpha(isActive ? (0.9 * 255).toInt() : (0.35 * 255).toInt()),
                       ),
                     );
                   }),
