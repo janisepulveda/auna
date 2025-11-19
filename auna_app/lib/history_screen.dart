@@ -25,7 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // lista de crisis filtradas para el día seleccionado
   List<CrisisModel> _selectedDayCrises = [];
 
-  // rosa lotus de la paleta
+  // verde/amarillo para domingos y selección
   final Color lotusPink = const Color(0xFF748204);
 
   @override
@@ -83,52 +83,97 @@ class _HistoryScreenState extends State<HistoryScreen> {
           expand: false,
           initialChildSize: 0.4,
           minChildSize: 0.3,
-          maxChildSize: 0.6,
+          maxChildSize: 0.95, // <--- ahora puede ocupar casi toda la pantalla
           builder: (BuildContext context, ScrollController scrollController) {
-            return Container(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(10),
+            final hasCrises = _selectedDayCrises.isNotEmpty;
+
+            if (hasCrises) {
+              // ===== CASO CON EPISODIOS: lista scrolleable normal =====
+              return Container(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // tirador
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                    const SizedBox(height: 16),
+                    Text(
+                      "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                  const Divider(color: Colors.black26),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: _selectedDayCrises.isEmpty
-                        ? const Center(
-                            child:
-                                Text('No hay episodios registrados para este día.'),
-                          )
-                        : ListView.builder(
-                            controller: scrollController,
-                            itemCount: _selectedDayCrises.length,
-                            itemBuilder: (context, index) {
-                              final crisis = _selectedDayCrises[index];
-                              return _buildCrisisListItem(crisis);
-                            },
+                    const Divider(color: Colors.black26),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: ListView.builder(
+                        controller: scrollController,
+                        itemCount: _selectedDayCrises.length,
+                        itemBuilder: (context, index) {
+                          final crisis = _selectedDayCrises[index];
+                          return _buildCrisisListItem(crisis);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else {
+              // ===== CASO SIN EPISODIOS: sheet expandible al scrollear =====
+              return Container(
+                padding: const EdgeInsets.all(16.0),
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            borderRadius: BorderRadius.circular(10),
                           ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const Divider(color: Colors.black26),
+                      const SizedBox(height: 40),
+                      const Center(
+                        child: Text(
+                          'No hay episodios registrados para este día.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 15),
+                        ),
+                      ),
+                      const SizedBox(height: 260),
+                      // este espacio extra ayuda a que haya "algo" que scrollear,
+                      // y así el DraggableScrollableSheet se pueda estirar.
+                    ],
                   ),
-                ],
-              ),
-            );
+                ),
+              );
+            }
           },
         );
       },
@@ -168,7 +213,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
                   // tarjeta "glass" con el calendario
                   Container(
-                    height: MediaQuery.of(context).size.height * 0.50, // <-- ACORTADO (antes llenaba todo)
+                    height: MediaQuery.of(context).size.height * 0.50,
                     padding: const EdgeInsets.all(18),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(24),
@@ -180,7 +225,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     child: _buildCalendar(context),
                   ),
-
                 ],
               ),
             ),
@@ -249,7 +293,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           fontWeight: FontWeight.w400,
         ),
 
-        // día de hoy (puede ser un borde muy sutil si quieres)
+        // día de hoy
         todayDecoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
@@ -260,15 +304,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         todayTextStyle: const TextStyle(color: Colors.white),
 
-        // SELECCIÓN: círculo SOLO CON BORDE ROSADO
+        // día seleccionado: solo borde
         selectedDecoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
             color: lotusPink,
             width: 2,
           ),
-          color: Colors
-              .transparent, // sin relleno para que se vea solo el contorno
+          color: Colors.transparent,
         ),
         selectedTextStyle: const TextStyle(
           color: Colors.white,
@@ -342,9 +385,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           height: 20,
           margin: const EdgeInsets.symmetric(horizontal: 1),
           decoration: BoxDecoration(
-            color: index < intensity
-                ? lotusPink
-                : Colors.grey.shade300,
+            color: index < intensity ? lotusPink : Colors.grey.shade300,
             borderRadius: BorderRadius.circular(2),
           ),
         );

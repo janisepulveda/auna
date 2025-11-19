@@ -1,5 +1,3 @@
-// login_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'main_scaffold.dart';
@@ -35,13 +33,18 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // === FONDO LOGIN ===
+          // ==== FONDO ====
           Image.asset(
-            'assets/imagenes/login.JPG',   // <<<<<<<<<<<<<<<<<<<<<< AQUÍ TU FONDO
+            'assets/imagenes/login.JPG',
             fit: BoxFit.cover,
           ),
 
-          // === CAPA DE CONTENIDO ===
+          // ==== OVERLAY OSCURO 40% (#001B12) ====
+          Container(
+            color: const Color(0xFF001B12).withOpacity(0.40),
+          ),
+
+          // ==== CONTENIDO ====
           SafeArea(
             child: Center(
               child: SingleChildScrollView(
@@ -49,37 +52,37 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // logo
-                    Image.asset(
-                      'assets/imagenes/auna05.png',
-                      width: 80,
-                      height: 80,
-                    ),
-                    const SizedBox(height: 10),
+                    // LOGO
+                    // Image.asset(
+                    //   'assets/imagenes/auna05.png',
+                    //   width: 80,
+                    //   height: 80,
+                    // ),
+                    // const SizedBox(height: 12),
 
-                    const Text(
-                      'AUNA',
-                      style: TextStyle(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
+                    // const Text(
+                    //   'AUNA',
+                    //   style: TextStyle(
+                    //     fontSize: 32,
+                    //     fontWeight: FontWeight.bold,
+                    //     color: Colors.white,
+                    //   ),
+                    // ),
 
                     const SizedBox(height: 34),
 
-                    // ===== GLASS FORM CONTAINER =====
+                    // ==== GLASS FORM ====
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(22),
                       child: BackdropFilter(
                         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
                         child: Container(
                           padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.20), // más transparente
-                            borderRadius: BorderRadius.circular(20),
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(22),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.40),
+                              color: Colors.white.withOpacity(0.45),
                               width: 1.2,
                             ),
                           ),
@@ -94,10 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
 
                     const SizedBox(height: 24),
-
                     _buildDivider(),
                     const SizedBox(height: 20),
 
+                    // SOCIAL
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -119,14 +122,15 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ==== INPUT DECORATION ====
   InputDecoration _buildInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(color: Colors.white70),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.20),
+      fillColor: Colors.white.withOpacity(0.22),
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.35)),
+        borderSide: BorderSide(color: Colors.white.withOpacity(0.30)),
         borderRadius: BorderRadius.circular(12),
       ),
       focusedBorder: OutlineInputBorder(
@@ -138,13 +142,16 @@ class _LoginScreenState extends State<LoginScreen> {
 
   ButtonStyle _buildButtonStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: Colors.white.withOpacity(0.25),
+      backgroundColor: Colors.white.withOpacity(0.24),
       foregroundColor: Colors.white,
       padding: const EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(14),
+      ),
     );
   }
 
+  // ==== LOGIN FORM ====
   Widget _buildLoginForm() {
     return Column(
       key: const ValueKey('login'),
@@ -195,6 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ==== SIGNUP FORM ====
   Widget _buildSignUpForm() {
     return Column(
       key: const ValueKey('signup'),
@@ -242,16 +250,24 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // ==== TITULOS DEL FORM ====
   Widget _buildFormTitle(String title, String subtitle) {
     return Column(
       children: [
-        Text(title,
-            style: const TextStyle(
-                fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
         const SizedBox(height: 8),
-        Text(subtitle,
-            style: const TextStyle(fontSize: 16, color: Colors.white70),
-            textAlign: TextAlign.center),
+        Text(
+          subtitle,
+          style: const TextStyle(fontSize: 16, color: Colors.white70),
+          textAlign: TextAlign.center,
+        ),
       ],
     );
   }
