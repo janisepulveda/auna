@@ -14,9 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // ============================================================
-  // RUTAS DE ASSETS
-  // ============================================================
+  // assets
 
   // Fondo fijo y capas estructurales
   static const String _background = 'assets/imagenes/fondo.JPG';
@@ -67,9 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // ------------------------------------------------------------
-  // Utilidades: contar crisis por umbral de intensidad
-  // ------------------------------------------------------------
+    // utilidades
 
   // clamp 0..4 para indexar las listas
   int _stageIndex(int count) {
@@ -101,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // ===== FONDO: capas superpuestas =====
+        // fondo: capas superpuestas
         Positioned.fill(
           child: Consumer<UserProvider>(
             builder: (context, userProvider, _) {
@@ -144,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
 
-        // ===== BOTÓN FLOTANTE ÚNICO (REGISTRAR CRISIS) =====
+        // botón flotante único (registrar crisis)
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -198,9 +194,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ============================================================
-// Fondo compuesto: capas fijas + 3 capas de flores
-// ============================================================
+// fondo compuesto: capas fijas + 3 capas de flores
 
 class _FlowerBackground extends StatelessWidget {
   final String backgroundAsset;
@@ -241,7 +235,7 @@ class _FlowerBackground extends StatelessWidget {
 /// Imagen a pantalla completa con recorte centrado.
 class _FullScreenCroppedImage extends StatelessWidget {
   final String asset;
-  const _FullScreenCroppedImage({super.key, required this.asset});
+  const _FullScreenCroppedImage({required this.asset});
 
   @override
   Widget build(BuildContext context) {

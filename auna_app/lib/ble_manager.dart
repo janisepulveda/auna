@@ -13,7 +13,7 @@ import 'notification_service.dart';
 import 'user_provider.dart';
 
 class BleManager extends ChangeNotifier {
-  // ===== configuración general =====
+  // configuración del dispositivo bluetooth
   // nombre visible del dispositivo bluetooth a conectar
   final String deviceName = 'Auna';
 
@@ -21,7 +21,7 @@ class BleManager extends ChangeNotifier {
   final Uuid serviceUuid = Uuid.parse("4fafc201-1fb5-459e-8fcc-c5c9c331914b");
   final Uuid charUuid = Uuid.parse("beb5483e-36e1-4688-b7f5-ea07361b26a8");
 
-  // ===== estado público para la interfaz =====
+  // estado público para la interfaz
   // instancia del plugin principal ble
   final FlutterReactiveBle _ble = FlutterReactiveBle();
 
@@ -34,7 +34,7 @@ class BleManager extends ChangeNotifier {
   // getter para saber si el dispositivo está conectado
   bool get isConnected => connectionStateLabel == 'Conectado';
 
-  // ===== variables internas =====
+  // variables internas
   // suscripciones a streams para escaneo, conexión y notificaciones
   StreamSubscription<DiscoveredDevice>? _scanSub;
   StreamSubscription<ConnectionStateUpdate>? _connSub;
@@ -53,7 +53,7 @@ class BleManager extends ChangeNotifier {
   // referencia al provider del usuario para registrar crisis y acceder a datos globales
   UserProvider? userProvider;
 
-  // ===== api pública =====
+  // api pública
   // inicia el proceso de conexión al dispositivo
   Future<void> connect() async {
     _keepConnected = true;
@@ -135,7 +135,7 @@ class BleManager extends ChangeNotifier {
     super.dispose();
   }
 
-  // ===== permisos =====
+  // permisos
   // verifica y solicita permisos de bluetooth y ubicación
   Future<bool> _ensurePermissions() async {
     try {
@@ -168,7 +168,7 @@ class BleManager extends ChangeNotifier {
     }
   }
 
-  // ===== conexión =====
+  // conexión
   // intenta conectar con un dispositivo específico por id
   void _connectTo(String deviceId) {
     _lastDeviceId = deviceId;
@@ -214,7 +214,7 @@ class BleManager extends ChangeNotifier {
     });
   }
 
-  // ===== reconexión =====
+  // reconexión
   // programa un nuevo intento de conexión usando retroceso exponencial
   void _scheduleReconnect() {
     if (!_keepConnected) return;
@@ -244,7 +244,7 @@ class BleManager extends ChangeNotifier {
     return attempt < table.length ? table[attempt] : 15;
   }
 
-  // ===== suscripción a notificaciones =====
+  // suscripción a notificaciones
   // escucha los datos enviados por el esp32 y ejecuta acciones según el contenido
   void _subscribeToNotifications(String deviceId) {
     final ch = QualifiedCharacteristic(
@@ -276,7 +276,7 @@ class BleManager extends ChangeNotifier {
     });
   }
 
-  // ===== manejo de crisis =====
+  // manejo de crisis
   // registra una crisis si el dispositivo envía la palabra "crisis"
   void _handleCrisis() {
     final now = DateTime.now();
@@ -310,7 +310,7 @@ class BleManager extends ChangeNotifier {
     });
   }
 
-  // ===== manejo de emergencia =====
+  // manejo de emergencia
   // ejecuta acciones cuando el dispositivo envía "emergencia"
   Future<void> _handleEmergency() async {
     final up = userProvider;

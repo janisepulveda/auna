@@ -16,18 +16,18 @@ import 'package:provider/provider.dart';
 import 'user_provider.dart';
 import 'ble_manager.dart';
 
-// ===== paleta base =====
+// paleta base
 const _navy = Colors.white; // textos/íconos en blanco
 const _bg = Color(0xFF061D17); // para bottom sheets oscuros
 
-// ===== utilidad de escala =====
+// utilidad de escala
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
   final s = (w / 390).clamp(.75, 0.95);
   return v * s;
 }
 
-// ===== estilos glass =====
+// estilos glass
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
       borderRadius: BorderRadius.circular(_sx(context, 16)),
       gradient: LinearGradient(
@@ -48,7 +48,7 @@ BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
       ],
     );
 
-// ===== superficie glass reutilizable =====
+// superficie glass reutilizable
 class _GlassSurface extends StatelessWidget {
   final Widget child;
   const _GlassSurface({required this.child});
@@ -75,7 +75,7 @@ class _GlassSurface extends StatelessWidget {
   }
 }
 
-// ===== tarjeta de acción =====
+// tarjeta de acción
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -170,7 +170,7 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-// ===================== settings screen =====================
+// configuración
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -178,7 +178,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ===== colores pdf (se mantienen iguales) =====
+  // colores pdf (se mantienen iguales)
   PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
   PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
   PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
@@ -194,7 +194,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return m;
   }
 
-  // ===== selector de periodo antes de exportar el pdf =====
+  // selector de periodo antes de exportar el pdf
   Future<void> _pickAndExportPdf() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
@@ -270,7 +270,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // ===== exportar a PDF (igual que antes) =====
+  // exportar a PDF (igual que antes)
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
@@ -473,7 +473,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${m}m ${s}s';
   }
 
-  // ===== hoja inferior BLE =====
+  // BLE
   void _showAmuletoSheet() {
     final bleWatch = context.watch<BleManager>();
     final ble = context.read<BleManager>();
@@ -531,7 +531,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ===================== UI principal =====================
+  // UI principal
   @override
   Widget build(BuildContext context) {
     final vgap = _sx(context, 12);

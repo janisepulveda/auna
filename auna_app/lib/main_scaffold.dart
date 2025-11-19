@@ -27,7 +27,7 @@ class _MainScaffoldState extends State<MainScaffold> {
     return Scaffold(
       body: Stack(
         children: [
-          // ===== scroll horizontal entre pantallas =====
+          // scroll horizontal entre pantallas principales
           PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -40,7 +40,7 @@ class _MainScaffoldState extends State<MainScaffold> {
             ],
           ),
 
-          // ===== indicador MUY sutil de páginas (3 puntitos) =====
+          // indicador MUY sutil de páginas (3 puntitos)
           SafeArea(
             child: Align(
               alignment: Alignment.topCenter,

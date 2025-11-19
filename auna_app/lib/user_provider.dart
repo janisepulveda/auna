@@ -6,14 +6,14 @@ import 'package:uuid/uuid.dart';
 // generador de ids únicos para cada crisis
 var uuid = const Uuid();
 
-// ===== modelo simple de usuario (nombre y correo) =====
+// modelo simple de usuario (nombre y correo)
 class UserData {
   final String name;
   final String email;
   UserData({required this.name, required this.email});
 }
 
-// ===== modelo de crisis (registro individual) =====
+// modelo de crisis (registro individual)
 // id: identificador único
 // date: fecha y hora del registro
 // intensity: nivel de intensidad (1..10)
@@ -41,7 +41,7 @@ class CrisisModel {
   });
 }
 
-// ===== provider principal del usuario y su historial =====
+// provider principal del usuario y su historial
 // expone: datos del usuario, lista de crisis, contador de crisis,
 // contacto de emergencia y apis para login/logout/crear/editar crisis.
 class UserProvider with ChangeNotifier {
@@ -56,7 +56,7 @@ class UserProvider with ChangeNotifier {
   // contador derivado: total de crisis registradas
   int get crisisCount => _registeredCrises.length;
 
-  // --- contacto de emergencia (teléfono opcional) ---
+  // contacto de emergencia (teléfono)
   String? _emergencyPhone;
   String? get emergencyPhone => _emergencyPhone;
 
@@ -66,7 +66,7 @@ class UserProvider with ChangeNotifier {
     _emergencyPhone = (p == null || p.isEmpty) ? null : p;
     notifyListeners();
   }
-  // --- fin contacto emergencia ---
+  // fin contacto de emergencia
 
   // busca una crisis por id; devuelve null si no existe
   CrisisModel? getCrisisById(String id) {

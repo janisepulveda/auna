@@ -511,12 +511,12 @@ class _CrisisDetailScreenState extends State<CrisisDetailScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // === Fondo global ===
+          // fondo global
           Image.asset(
             kBackgroundAsset,
             fit: BoxFit.cover,
           ),
-          // === Contenido sobre safe area ===
+          // contenido sobre safe area
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
