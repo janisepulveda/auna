@@ -1,74 +1,66 @@
 // lib/settings_screen.dart
 
 import 'dart:async';
-//import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-//import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:open_file_plus/open_file_plus.dart';
 import 'package:path_provider/path_provider.dart';
-//import 'package:permission_handler/permission_handler.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:provider/provider.dart';
-//import 'package:url_launcher/url_launcher.dart';
 
 import 'user_provider.dart';
-//import 'notification_service.dart';
-import 'ble_manager.dart'; // <-- usamos el servicio global ble
+import 'ble_manager.dart';
 
-// ===== paleta de colores base para la pantalla de ajustes =====
-const _navy = Color(0xFF38455C);
-const _bg = Color(0xFFF0F7FA);
+// ===== paleta base =====
+const _navy = Colors.white; // textos/íconos en blanco
+const _bg = Color(0xFF061D17); // para bottom sheets oscuros
 
-// ===== utilidad de escala: ajusta medidas en función del ancho del teléfono =====
+// ===== utilidad de escala =====
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
   final s = (w / 390).clamp(.75, 0.95);
   return v * s;
 }
 
-// ===== estilos "glass": contenedor con gradiente, borde y sombra suaves =====
+// ===== estilos glass =====
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
       borderRadius: BorderRadius.circular(_sx(context, 16)),
       gradient: LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
         colors: [
-          Colors.white.withValues(alpha: 0.35),
-          Colors.white.withValues(alpha: 0.15),
+          Colors.white.withValues(alpha: 0.25),
+          Colors.white.withValues(alpha: 0.10),
         ],
       ),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.48), width: 1.0),
+      border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 1.0),
       boxShadow: [
         BoxShadow(
-          color: const Color(0xFFAABEDC).withValues(alpha: 0.12),
+          color: const Color(0xFFAABEDC).withValues(alpha: 0.20),
           blurRadius: _sx(context, 10),
           offset: Offset(0, _sx(context, 5)),
         ),
       ],
     );
 
-// ===== superficie glass reutilizable (desenfoque + contenedor) =====
+// ===== superficie glass reutilizable =====
 class _GlassSurface extends StatelessWidget {
   final Widget child;
   const _GlassSurface({required this.child});
 
-  // padding por defecto dependiente de la escala
   static EdgeInsets _defaultPad(BuildContext c) => EdgeInsets.all(_sx(c, 10));
 
   @override
   Widget build(BuildContext context) {
     final r = _sx(context, 16);
     return ClipRRect(
-      // recorta bordes redondeados para que el blur no se salga del contenedor
       borderRadius: BorderRadius.circular(r),
       child: BackdropFilter(
-        // aplica desenfoque al fondo para efecto glass
         filter: ui.ImageFilter.blur(
           sigmaX: _sx(context, 10),
           sigmaY: _sx(context, 10),
@@ -83,7 +75,7 @@ class _GlassSurface extends StatelessWidget {
   }
 }
 
-// ===== tarjeta de acción: icono + título + subtítulo + flecha =====
+// ===== tarjeta de acción =====
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -98,18 +90,17 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // tamaños sensibles al ancho del dispositivo
     final iconSize = _sx(context, 32);
     final tileSide = _sx(context, 48);
     final gap = _sx(context, 10);
 
     return GestureDetector(
       onTap: onTap,
-      behavior: HitTestBehavior.opaque, // toda el área responde al tap
+      behavior: HitTestBehavior.opaque,
       child: _GlassSurface(
         child: Row(
           children: [
-            // bloque del icono con su propio blur y gradiente
+            // icono
             ClipRRect(
               borderRadius: BorderRadius.circular(_sx(context, 14)),
               child: BackdropFilter(
@@ -124,25 +115,24 @@ class _ActionCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(_sx(context, 14)),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.8),
-                        Colors.white.withValues(alpha: 0.6),
+                        Colors.white.withValues(alpha: 0.80),
+                        Colors.white.withValues(alpha: 0.60),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.6)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
                   ),
-                  child: Icon(icon, color: _navy, size: iconSize),
+                  child: Icon(icon, color: Colors.black87, size: iconSize),
                 ),
               ),
             ),
             SizedBox(width: gap),
-            // textos de título y subtítulo con elipsis
+            // textos
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // título fuerte
                   Text(
                     title,
                     maxLines: 1,
@@ -154,13 +144,12 @@ class _ActionCard extends StatelessWidget {
                     ),
                   ),
                   SizedBox(height: _sx(context, 2)),
-                  // subtítulo descriptivo
                   Text(
                     subtitle,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: _navy.withValues(alpha: 0.72),
+                      color: _navy.withValues(alpha: 0.7),
                       fontSize: _sx(context, 12.5),
                       height: 1.22,
                     ),
@@ -169,8 +158,11 @@ class _ActionCard extends StatelessWidget {
               ),
             ),
             SizedBox(width: _sx(context, 6)),
-            // chevron de navegación
-            Icon(Icons.chevron_right, color: _navy.withValues(alpha: 0.7), size: _sx(context, 22)),
+            Icon(
+              Icons.chevron_right,
+              color: _navy.withValues(alpha: 0.8),
+              size: _sx(context, 22),
+            ),
           ],
         ),
       ),
@@ -186,13 +178,12 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // ===== helpers de color para el pdf (coinciden con la paleta visual) =====
+  // ===== colores pdf (se mantienen iguales) =====
   PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
   PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
   PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
   PdfColor get _pdfGrey => const PdfColor.fromInt(0xFF6B7A88);
 
-  // ===== util: contar síntomas repetidos para resumen en pdf =====
   Map<String, int> countSymptoms(Iterable<String> xs) {
     final m = <String, int>{};
     for (final raw in xs) {
@@ -207,33 +198,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _pickAndExportPdf() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
-      showDragHandle: true, // tirador para sugerir que se puede arrastrar
+      showDragHandle: true,
+      backgroundColor: _bg,
       builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const ListTile(
-              title: Text('Exportar PDF'),
-              subtitle: Text('Elige el período'),
+              title: Text('Exportar PDF', style: TextStyle(color: Colors.white)),
+              subtitle: Text('Elige el período',
+                  style: TextStyle(color: Colors.white70)),
             ),
             ListTile(
-              leading: const Icon(Icons.all_inbox),
-              title: const Text('Todo el historial'),
+              leading: const Icon(Icons.all_inbox, color: Colors.white),
+              title: const Text('Todo el historial',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('all'),
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_view_month),
-              title: const Text('Mes actual'),
+              leading:
+                  const Icon(Icons.calendar_view_month, color: Colors.white),
+              title: const Text('Mes actual',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('month'),
             ),
             ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Últimos 30 días'),
+              leading:
+                  const Icon(Icons.calendar_today, color: Colors.white),
+              title: const Text('Últimos 30 días',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('30'),
             ),
             ListTile(
-              leading: const Icon(Icons.date_range),
-              title: const Text('Elegir rango…'),
+              leading: const Icon(Icons.date_range, color: Colors.white),
+              title: const Text('Elegir rango…',
+                  style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('range'),
             ),
             const SizedBox(height: 8),
@@ -243,7 +242,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
     if (!mounted || choice == null) return;
 
-    // resuelve rango según la opción elegida
     DateTime? from;
     DateTime? to;
     if (choice == 'month') {
@@ -267,17 +265,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       );
       if (picked == null) return;
       from = picked.start;
-      // sumamos 1 día al final para incluirlo de forma exclusiva
       to = picked.end.add(const Duration(days: 1));
     }
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // ===== genera y guarda el pdf en documentos; intenta abrirlo con open_file_plus =====
+  // ===== exportar a PDF (igual que antes) =====
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
-    // prepara localización y formato de fechas
     if (!mounted) return;
     try {
       await initializeDateFormatting('es_CL', null);
@@ -285,16 +281,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (!mounted) return;
 
-    // obtiene datos del usuario y filtra por rango
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
     final userName = up.user?.name ?? 'Usuario Auna';
     final start = from ?? DateTime.fromMillisecondsSinceEpoch(0);
     final end = to ?? DateTime.now();
 
-    final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
+    final crises =
+        all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
     if (crises.isEmpty) {
-      // feedback si no hay datos en el rango seleccionado
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No hay crisis en el período seleccionado.')),
@@ -302,7 +297,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    // ordena y calcula indicadores básicos
     crises.sort((a, b) => a.date.compareTo(b.date));
     final df = DateFormat.yMMMMd('es_CL');
     final tf = DateFormat.Hm('es_CL');
@@ -316,7 +310,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final double? avgDuration =
         durations.isEmpty ? null : totalDuration / durations.length;
 
-    // buckets de intensidad (para un vistazo rápido)
     int leves = 0, moderados = 0, severos = 0;
     for (final c in crises) {
       final v = c.intensity.toInt();
@@ -329,7 +322,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
-    // resumen de síntomas más frecuentes
     final symptomsCounts = countSymptoms(crises.expand((c) => c.symptoms));
     String symptomsSummary(Map<String, int> map, {int take = 6}) {
       if (map.isEmpty) return '-';
@@ -337,10 +329,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return ord.take(take).map((e) => '• ${e.key}: ${e.value}').join('\n');
     }
 
-    // alias locales para colores pdf
     final pdfNavy = _pdfNavy, pdfIce = _pdfIce, pdfLine = _pdfLine, pdfGrey = _pdfGrey;
 
-    // helpers para celdas de tabla
     pw.Widget headCell(String t) => pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 6),
           color: pdfIce,
@@ -362,7 +352,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
         );
 
-    // tabla de resumen (indicadores generales)
     final summaryTable = pw.Table(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {0: pw.FixedColumnWidth(175), 1: pw.FlexColumnWidth(1)},
@@ -377,7 +366,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ],
     );
 
-    // tabla de detalle de crisis (listado con columnas clave)
     final detailTable = pw.TableHelper.fromTextArray(
       border: pw.TableBorder.all(color: pdfLine, width: .6),
       columnWidths: const {
@@ -416,7 +404,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           .toList(),
     );
 
-    // página principal del reporte con encabezado, resumen y detalle
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
@@ -451,7 +438,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
 
-    // guarda el pdf en la carpeta de documentos de la app e intenta abrirlo
     try {
       final dir = await getApplicationDocumentsDirectory();
       final name =
@@ -459,14 +445,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       final file = File("${dir.path}/$name");
       await file.writeAsBytes(await pdf.save());
       final res = await OpenFile.open(file.path);
-      // si no se puede abrir, informa dónde quedó el archivo
       if (res.type != ResultType.done && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('PDF guardado en Documentos ($name)')),
         );
       }
     } catch (e) {
-      // feedback de error acotado (máx 100 caracteres)
       if (mounted) {
         final msg = e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -478,7 +462,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // ===== convierte segundos a formato legible (ej. 1h 05m, 12m 30s) =====
   String _formatDuration(int seconds) {
     final m = seconds ~/ 60;
     final s = seconds % 60;
@@ -490,10 +473,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return '${m}m ${s}s';
   }
 
-  // ===== hoja inferior para administrar conexión del amuleto (usa blemanager) =====
+  // ===== hoja inferior BLE =====
   void _showAmuletoSheet() {
-    final bleWatch = context.watch<BleManager>(); // escucha cambios de estado
-    final ble = context.read<BleManager>();       // instancia para ejecutar acciones
+    final bleWatch = context.watch<BleManager>();
+    final ble = context.read<BleManager>();
     final conectado = bleWatch.isConnected;
 
     showModalBottomSheet(
@@ -511,23 +494,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // tile principal: conectar o mostrar estado actual
               ListTile(
                 leading: Icon(
-                  conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
-                  color: _navy,
+                  conectado
+                      ? Icons.bluetooth_connected
+                      : Icons.bluetooth_searching,
+                  color: Colors.white,
                 ),
-                title: Text(conectado ? 'Conectado' : bleWatch.connectionStateLabel),
-                subtitle: Text(conectado
-                    ? 'Recibiendo eventos del amuleto'
-                    : 'Toca para conectar'),
+                title: Text(
+                  conectado ? 'Conectado' : bleWatch.connectionStateLabel,
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  conectado
+                      ? 'Recibiendo eventos del amuleto'
+                      : 'Toca para conectar',
+                  style: const TextStyle(color: Colors.white70),
+                ),
                 onTap: conectado ? null : ble.connect,
               ),
-              // acción secundaria: desconectar cuando ya está conectado
               if (conectado)
                 ListTile(
-                  leading: const Icon(Icons.link_off),
-                  title: const Text('Desconectar'),
+                  leading: const Icon(Icons.link_off, color: Colors.white),
+                  title: const Text('Desconectar',
+                      style: TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(context);
                     ble.disconnect();
@@ -541,13 +531,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // ===================== ui principal de la pantalla de ajustes =====================
+  // ===================== UI principal =====================
   @override
   Widget build(BuildContext context) {
     final vgap = _sx(context, 12);
     final ble = context.watch<BleManager>();
 
-    // subtítulo dinámico para el estado del amuleto
     final subtitleBle = ble.isConnected
         ? 'Conectado — recibiendo eventos'
         : (ble.connectionStateLabel.startsWith('Reconectando')
@@ -557,64 +546,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 : ble.connectionStateLabel));
 
     return Scaffold(
-      backgroundColor: _bg, // fondo celeste muy suave
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: EdgeInsets.fromLTRB(
-            _sx(context, 16),
-            _sx(context, 10),
-            _sx(context, 16),
-            _sx(context, 24),
+      backgroundColor: Colors.transparent,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // fondo a pantalla completa
+          Image.asset(
+            'assets/imagenes/fondo.JPG',
+            fit: BoxFit.cover,
           ),
-          child: Column(
-            children: [
-              // título de la pantalla
-              Text(
-                'Configuración',
-                style: TextStyle(
-                  fontSize: _sx(context, 24),
-                  fontWeight: FontWeight.w800,
-                  color: _navy,
-                ),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(
+                _sx(context, 16),
+                _sx(context, 10),
+                _sx(context, 16),
+                _sx(context, 24),
               ),
-              SizedBox(height: _sx(context, 4)),
-              // subtítulo descriptivo
-              Text(
-                'Accede a todas las funciones',
-                style: TextStyle(
-                  fontSize: _sx(context, 13),
-                  color: _navy.withValues(alpha: 0.7),
-                ),
+              child: Column(
+                children: [
+                  Text(
+                    'Configuración',
+                    style: TextStyle(
+                      fontSize: _sx(context, 24),
+                      fontWeight: FontWeight.w800,
+                      color: _navy,
+                    ),
+                  ),
+                  SizedBox(height: _sx(context, 4)),
+                  Text(
+                    'Accede a todas las funciones',
+                    style: TextStyle(
+                      fontSize: _sx(context, 13),
+                      color: _navy.withValues(alpha: 0.7),
+                    ),
+                  ),
+                  SizedBox(height: _sx(context, 10)),
+                  _ActionCard(
+                    icon: Icons.bluetooth,
+                    title: 'Amuleto Bluetooth',
+                    subtitle: subtitleBle,
+                    onTap: _showAmuletoSheet,
+                  ),
+                  SizedBox(height: vgap),
+                  _ActionCard(
+                    icon: Icons.person_add_alt_1,
+                    title: 'Contacto de Emergencia',
+                    subtitle: 'Configura un contacto para notificar',
+                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Función no implementada')),
+                    ),
+                  ),
+                  SizedBox(height: vgap),
+                  _ActionCard(
+                    icon: Icons.download_outlined,
+                    title: 'Exportar Historial',
+                    subtitle: 'Descargar datos en PDF',
+                    onTap: _pickAndExportPdf,
+                  ),
+                ],
               ),
-              SizedBox(height: _sx(context, 10)),
-              // tarjeta: estado/conexión del amuleto
-              _ActionCard(
-                icon: Icons.bluetooth,
-                title: 'Amuleto Bluetooth',
-                subtitle: subtitleBle,
-                onTap: _showAmuletoSheet,
-              ),
-              SizedBox(height: vgap),
-              // tarjeta: contacto de emergencia (placeholder)
-              _ActionCard(
-                icon: Icons.person_add_alt_1,
-                title: 'Contacto de Emergencia',
-                subtitle: 'Configura un contacto para notificar',
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Función no implementada')),
-                ),
-              ),
-              SizedBox(height: vgap),
-              // tarjeta: exportar historial a pdf
-              _ActionCard(
-                icon: Icons.download_outlined,
-                title: 'Exportar Historial',
-                subtitle: 'Descargar datos en PDF',
-                onTap: _pickAndExportPdf,
-              ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
