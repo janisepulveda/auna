@@ -25,7 +25,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   // lista de crisis filtradas para el día seleccionado
   List<CrisisModel> _selectedDayCrises = [];
 
-  // verde/amarillo para domingos y selección
+  // verde-amarillo de los domingos / sábados
   final Color lotusPink = const Color(0xFF748204);
 
   @override
@@ -62,6 +62,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _updateSelectedDayCrises(selectedDay);
     });
 
+    // pequeño delay para que se vea primero la selección
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         _showCrisisDetailSheet(selectedDay);
@@ -74,106 +75,76 @@ class _HistoryScreenState extends State<HistoryScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      backgroundColor: Colors.transparent, // para ver el borde redondeado
+      barrierColor: Colors.black.withOpacity(0.3),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.4,
-          minChildSize: 0.3,
-          maxChildSize: 0.95, // <--- ahora puede ocupar casi toda la pantalla
+          initialChildSize: 0.35, // altura inicial
+          minChildSize: 0.25,     // mínimo
+          maxChildSize: 0.95,     // CASI pantalla completa al arrastrar
           builder: (BuildContext context, ScrollController scrollController) {
-            final hasCrises = _selectedDayCrises.isNotEmpty;
-
-            if (hasCrises) {
-              // ===== CASO CON EPISODIOS: lista scrolleable normal =====
-              return Container(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // tirador
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              ),
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // tirador
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    Text(
-                      "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const Divider(color: Colors.black26),
-                    const SizedBox(height: 8),
-                    Expanded(
-                      child: ListView.builder(
-                        controller: scrollController,
-                        itemCount: _selectedDayCrises.length,
-                        itemBuilder: (context, index) {
-                          final crisis = _selectedDayCrises[index];
-                          return _buildCrisisListItem(crisis);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            } else {
-              // ===== CASO SIN EPISODIOS: sheet expandible al scrollear =====
-              return Container(
-                padding: const EdgeInsets.all(16.0),
-                child: SingleChildScrollView(
-                  controller: scrollController,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 40,
-                          height: 5,
-                          decoration: BoxDecoration(
-                            color: Colors.grey[300],
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const Divider(color: Colors.black26),
-                      const SizedBox(height: 40),
-                      const Center(
-                        child: Text(
-                          'No hay episodios registrados para este día.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 15),
-                        ),
-                      ),
-                      const SizedBox(height: 260),
-                      // este espacio extra ayuda a que haya "algo" que scrollear,
-                      // y así el DraggableScrollableSheet se pueda estirar.
-                    ],
                   ),
-                ),
-              );
-            }
+                  const SizedBox(height: 16),
+
+                  Text(
+                    "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const Divider(color: Colors.black26),
+                  const SizedBox(height: 8),
+
+                  // IMPORTANTE: siempre un widget scrolleable con el scrollController
+                  Expanded(
+                    child: _selectedDayCrises.isEmpty
+                        ? ListView(
+                            controller: scrollController,
+                            children: const [
+                              SizedBox(height: 40),
+                              Center(
+                                child: Text(
+                                  'No hay episodios registrados para este día.',
+                                  style: TextStyle(color: Colors.black54),
+                                ),
+                              ),
+                              SizedBox(height: 40),
+                            ],
+                          )
+                        : ListView.builder(
+                            controller: scrollController,
+                            itemCount: _selectedDayCrises.length,
+                            itemBuilder: (context, index) {
+                              final crisis = _selectedDayCrises[index];
+                              return _buildCrisisListItem(crisis);
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
           },
         );
       },
@@ -200,7 +171,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
               padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
               child: Column(
                 children: [
-                  // título
                   const Text(
                     'Historial',
                     style: TextStyle(
@@ -211,19 +181,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const SizedBox(height: 20),
 
-                  // tarjeta "glass" con el calendario
-                  Container(
-                    height: MediaQuery.of(context).size.height * 0.50,
-                    padding: const EdgeInsets.all(18),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(24),
-                      color: Colors.black.withValues(alpha: 0.18),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.35),
-                        width: 1.2,
+                  // tarjeta "glass" con el calendario (sin height fija)
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: Container(
+                        padding: const EdgeInsets.all(18),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(24),
+                          color: Colors.black.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 1.2,
+                          ),
+                        ),
+                        child: _buildCalendar(context),
                       ),
                     ),
-                    child: _buildCalendar(context),
                   ),
                 ],
               ),
@@ -293,7 +267,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           fontWeight: FontWeight.w400,
         ),
 
-        // día de hoy
+        // día de hoy: borde blanco sutil
         todayDecoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
@@ -304,7 +278,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
         todayTextStyle: const TextStyle(color: Colors.white),
 
-        // día seleccionado: solo borde
+        // selección: círculo SOLO CON BORDE verde-amarillo
         selectedDecoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
