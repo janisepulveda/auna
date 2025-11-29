@@ -7,33 +7,59 @@ Este documento describe los flujos de usuario principales de **AUNA**, una aplic
 
 Todas las pantallas que existen y cómo están conectadas entre sí.
 ```mermaid
-graph LR
-    %% El Nivel 0 son las pantallas de Onboarding
-    A("Inicio") --> B{¿Usuario tiene sesión?};
-    B -- No --> C["Flujo de Onboarding <br> (Login / Crear Cuenta)"];
-    B -- Sí --> D["Navegación Principal (Tab Bar)"];
+flowchart LR
+    %% --- ESTILOS ---
+    classDef main fill:#fff,stroke:#333,stroke-width:1px;
+    classDef action fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
+    classDef physical fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 5 5;
+    classDef alert fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef feedback fill:#dcfce7,stroke:#166534,stroke-width:2px;
 
-    %% El Nivel 1 son las 3 pestañas principales que mostraste
-    D --> E["Home (Flores de Loto)"];
-    D --> F["Historial (Calendario)"];
-    D --> G["Ajustes (Perfil)"];
+    %% --- COLUMNA 1: ENTRADAS ---
+    subgraph Inputs [Entradas]
+        direction TB
+        style Inputs fill:transparent,stroke:none
+        Amuleto(Amuleto Físico):::physical
+        Inicio((Inicio))
+    end
 
-    %% El Nivel 2 son las pantallas que salen de las principales
+    %% --- COLUMNA 2: NAVEGACIÓN (El Menú) ---
+    subgraph TabBar [Navegación Principal]
+        direction TB
+        %% EL TRUCO: Usamos '---' para pegarlos físicamente
+        Home[Home: Jardín]:::main
+        Home --- Historial[Historial]:::main
+        Historial --- Ajustes[Ajustes]:::main
+    end
+
+    %% --- COLUMNA 3: ACCIONES ---
+    CrisisForm[Detalle de Crisis]:::action
+    VerDia[Ver Día]:::main
     
-    %% Desde Home
-    E -- "Presiona '+'" --> H["Pantalla: Detalle de Crisis"];
-    %% Vuelve a Home
-    H -- "Guardar" --> E;
+    %% --- CONEXIONES ---
+    
+    %% Flujo Inicio
+    Inicio --> Check{¿Sesión?}
+    Check -- No --> Onboard[Login] --> Home
+    Check -- Sí --> Home
 
-    %% Desde Historial
-    F -- "Selecciona un día" --> I["Pantalla: Detalles del Día"];
-    %% Vuelve al Calendario
-    I --> F;
+    %% Flujo Amuleto
+    Amuleto -.->|Presiona Botón| CrisisForm
 
-    %% Desde Ajustes
-    G --> J["Pantalla: Conectar Amuleto"];
-    G --> K["Pantalla: Contacto de Emergencia"];
-    G --> L["Pantalla: Exportar Historial"];
+    %% Flujo Home
+    Home -->|Botón +| CrisisForm
+    CrisisForm --> Guardar{Guardado}:::feedback
+    Guardar --> Home
+
+    %% Flujo Historial
+    Historial --> VerDia -->|Editar| CrisisForm
+
+    %% Flujo Ajustes
+    Ajustes --> Conectar[Conectar amuleto]:::main
+    Ajustes --> Exportar[Exportar historial]:::main
+    Ajustes --> SOS[Contacto de emergencia]:::alert
+    
+    SOS -.-> Call((Mensaje SMS))
 ```
 ## 2. Flujo de Onboarding
 
