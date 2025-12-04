@@ -66,74 +66,43 @@ flowchart LR
 Este flujo muestra el proceso que sigue un usuario desde que descarga la aplicación hasta que conecta su amuleto y llega a la pantalla de inicio (Home).
 
 ```mermaid
-flowchart LR
-    %% --- ESTILOS ---
-    classDef user fill:#fff3e0,stroke:#e65100,stroke-width:2px;
-    classDef app fill:#e3f2fd,stroke:#1565c0,stroke-width:2px;
-    classDef physical fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,stroke-dasharray: 5 5;
-    classDef error fill:#ffebee,stroke:#c62828,stroke-width:1px;
-
-    %% --- DEFINICIÓN DE CARRILES ---
+graph LR
+    %% Fase 1: Inicio y Permisos
+    A((Descarga App)) --> B[Abre App]
+    B --> C{Pide Permisos<br>Redes}
     
-    subgraph UserLayer [ ]
-        direction LR
-        style UserLayer fill:none,stroke:none
-        Descarga(Descarga App):::user
-        Input(Ingresa Datos):::user
-        Acepta(Acepta Permisos):::user
-        Press(Presiona Amuleto):::user
-    end
-
-    subgraph AppLayer [ ]
-        direction LR
-        style AppLayer fill:none,stroke:none
-        Splash[Bienvenida]:::app
-        CheckPermisos{Permisos?}:::app
-        Conectar[Pantalla: Conectar]:::app
-        Detectando{Señal?}:::app
-        Exito[Exito: Conectado]:::app
-        Home((Home)):::app
-    end
-
-    subgraph HardLayer [ ]
-        direction LR
-        style HardLayer fill:none,stroke:none
-        Signal((Emitiendo Señal)):::physical
-        Error[Fallo: Reintentar]:::error
-    end
-
-    %% --- FLUJO LÓGICO (FLECHAS) ---
-
-    Descarga --> Splash
-    Splash --> Input
-    Input --> CheckPermisos
-
-    CheckPermisos -- Si --> Conectar
-    CheckPermisos -- Solicita --> Acepta
-    Acepta -.-> Conectar
-
-    Conectar --> Press
-    Press -.-> Signal
-    Signal -.-> Detectando
-
-    Detectando -- Sí --> Exito --> Home
-    Detectando -- No --> Error --> Conectar
-    Conectar -- Saltar --> Home
-
-    %% --- EL TRUCO: ANCLAJES VERTICALES (COSTURAS) ---
-    %% Esto obliga a que los nodos de cada "paso" estén alineados verticalmente
+    %% Ramas Permiso Redes (CORREGIDO: Loop de reintento)
+    C -- No --> D[Pantalla: Imposible<br>Muestra razón]
+    D -- Reintentar --> C 
     
-    %% Columna 1: Inicio
-    Descarga ~~~ Splash
-    
-    %% Columna 2: Datos
-    Input ~~~ CheckPermisos
-    
-    %% Columna 3: Permisos
-    Acepta ~~~ Conectar
-    
-    %% Columna 4: Acción Física
-    Press ~~~ Detectando ~~~ Signal
+    C -- Sí --> E{Pide Permisos<br>Notificaciones}
+
+    %% Ramas Permiso Notificaciones (Loop de reintento)
+    E -- No --> F[Pantalla: Imposible<br>Muestra importancia]
+    F -- Reintentar --> E
+
+    E -- Sí --> G{¿Tiene Cuenta?}
+
+    %% Fase 2: Cuenta
+    G -- No --> H[Pantalla: Crear Cuenta]
+    G -- Sí --> I[Pantalla: Continuar/Login]
+
+    %% Fase 3: Navegación Manual
+    H --> J[Inicio:<br>Flores Cerradas]
+    I --> J
+    J --> K[Usuario va a Ajustes]
+    K --> L[Usuario prende Amuleto]
+    L --> M[Presionar botón 'Conectar']
+
+    %% Fase 4: Loop de Conexión
+    M --> N{¿Se conecta?}
+    N -- No --> M
+    N -- Sí --> O((Listo para usar))
+
+    %% Estilos
+    style D fill:#ffcccc,stroke:#ff0000,stroke-width:2px
+    style F fill:#ffcccc,stroke:#ff0000,stroke-width:2px
+    style O fill:#ccffcc,stroke:#00ff00,stroke-width:2px
 ```
 
 ## 3. Flujo de Registro de Episodio de Dolor
