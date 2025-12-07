@@ -17,63 +17,22 @@ import 'user_provider.dart';
 import 'ble_manager.dart';
 
 // paleta base
-const _navy = Colors.white; // textos/íconos en blanco
-const _bg = Color(0xFF061D17); // para bottom sheets oscuros
+const _navy = Colors.white; 
+const _bg = Color(0xFF061D17); 
 
-// utilidad de escala
+// utilidad de escala (la mantenemos solo para elementos internos si hace falta)
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
   final s = (w / 390).clamp(.75, 0.95);
   return v * s;
 }
 
-// estilos glass
+// estilos glass (ACTUALIZADO: Coincide con HistoryScreen)
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
-      borderRadius: BorderRadius.circular(_sx(context, 16)),
-      gradient: LinearGradient(
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-        colors: [
-          Colors.white.withValues(alpha: 0.25),
-          Colors.white.withValues(alpha: 0.10),
-        ],
-      ),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.55), width: 1.0),
-      boxShadow: [
-        BoxShadow(
-          color: const Color(0xFFAABEDC).withValues(alpha: 0.20),
-          blurRadius: _sx(context, 10),
-          offset: Offset(0, _sx(context, 5)),
-        ),
-      ],
-    );
-
-// superficie glass reutilizable
-class _GlassSurface extends StatelessWidget {
-  final Widget child;
-  const _GlassSurface({required this.child});
-
-  static EdgeInsets _defaultPad(BuildContext c) => EdgeInsets.all(_sx(c, 10));
-
-  @override
-  Widget build(BuildContext context) {
-    final r = _sx(context, 16);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(r),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(
-          sigmaX: _sx(context, 10),
-          sigmaY: _sx(context, 10),
-        ),
-        child: Container(
-          decoration: _glassContainer(context: context),
-          padding: _defaultPad(context),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
+  borderRadius: BorderRadius.circular(24), // Igual que el calendario
+  color: Colors.black.withValues(alpha: 0.18), // Fondo oscuro
+  border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
+);
 
 // tarjeta de acción
 class _ActionCard extends StatelessWidget {
@@ -81,6 +40,7 @@ class _ActionCard extends StatelessWidget {
   final String title;
   final String subtitle;
   final VoidCallback? onTap;
+  
   const _ActionCard({
     required this.icon,
     required this.title,
@@ -90,80 +50,80 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = _sx(context, 32);
-    final tileSide = _sx(context, 48);
-    final gap = _sx(context, 10);
+    // Ajustamos tamaños fijos para consistencia
+    const double iconSize = 28;
+    const double tileSide = 48;
+    const double gap = 16;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: _GlassSurface(
-        child: Row(
-          children: [
-            // icono
-            ClipRRect(
-              borderRadius: BorderRadius.circular(_sx(context, 14)),
-              child: BackdropFilter(
-                filter: ui.ImageFilter.blur(
-                  sigmaX: _sx(context, 8),
-                  sigmaY: _sx(context, 8),
-                ),
-                child: Container(
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(24),
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: _glassContainer(context: context),
+            child: Row(
+              children: [
+                // icono con fondo suave
+                Container(
                   width: tileSide,
                   height: tileSide,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(_sx(context, 14)),
+                    borderRadius: BorderRadius.circular(14),
                     gradient: LinearGradient(
                       colors: [
-                        Colors.white.withValues(alpha: 0.80),
-                        Colors.white.withValues(alpha: 0.60),
+                        Colors.white.withValues(alpha: 0.15),
+                        Colors.white.withValues(alpha: 0.05),
                       ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.7)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
-                  child: Icon(icon, color: Colors.black87, size: iconSize),
+                  child: Icon(icon, color: Colors.white, size: iconSize),
                 ),
-              ),
-            ),
-            SizedBox(width: gap),
-            // textos
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _navy,
-                      fontSize: _sx(context, 16),
-                      fontWeight: FontWeight.w700,
-                    ),
+                SizedBox(width: gap),
+                // textos
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: _navy,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: _navy.withValues(alpha: 0.7),
+                          fontSize: 12,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: _sx(context, 2)),
-                  Text(
-                    subtitle,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: _navy.withValues(alpha: 0.7),
-                      fontSize: _sx(context, 12.5),
-                      height: 1.22,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right,
+                  color: _navy.withValues(alpha: 0.5),
+                  size: 24,
+                ),
+              ],
             ),
-            SizedBox(width: _sx(context, 6)),
-            Icon(
-              Icons.chevron_right,
-              color: _navy.withValues(alpha: 0.8),
-              size: _sx(context, 22),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -178,7 +138,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // colores pdf (se mantienen iguales)
+  // colores pdf
   PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
   PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
   PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
@@ -270,7 +230,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // exportar a PDF (igual que antes)
+  // exportar a PDF (Lógica intacta)
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
@@ -305,7 +265,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final avgIntensity = totalIntensity / crises.length;
 
     final durations =
-        crises.map((c) => c.duration).whereType<int>().where((d) => d > 0).toList();
+        crises.map((c) => c.duration).where((d) => d > 0).toList();
     final totalDuration = durations.isEmpty ? 0 : durations.reduce((a, b) => a + b);
     final double? avgDuration =
         durations.isEmpty ? null : totalDuration / durations.length;
@@ -531,10 +491,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // UI principal
+  // UI principal ACTUALIZADA PARA ALINEACIÓN PERFECTA
   @override
   Widget build(BuildContext context) {
-    final vgap = _sx(context, 12);
     final ble = context.watch<BleManager>();
 
     final subtitleBle = ble.isConnected
@@ -550,45 +509,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // fondo a pantalla completa
+          // fondo
           Image.asset(
             'assets/imagenes/fondo.JPG',
             fit: BoxFit.cover,
           ),
           SafeArea(
+            bottom: false,
             child: SingleChildScrollView(
-              padding: EdgeInsets.fromLTRB(
-                _sx(context, 16),
-                _sx(context, 10),
-                _sx(context, 16),
-                _sx(context, 24),
-              ),
+              // PADDING ESTANDARIZADO CON HISTORY SCREEN
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
               child: Column(
                 children: [
-                  Text(
+                  const Text(
                     'Configuración',
                     style: TextStyle(
-                      fontSize: _sx(context, 24),
-                      fontWeight: FontWeight.w800,
+                      fontSize: 26, // Igual que Historial
+                      fontWeight: FontWeight.w800, // Igual que Historial
                       color: _navy,
                     ),
                   ),
-                  SizedBox(height: _sx(context, 4)),
-                  Text(
-                    'Accede a todas las funciones',
-                    style: TextStyle(
-                      fontSize: _sx(context, 13),
-                      color: _navy.withValues(alpha: 0.7),
-                    ),
-                  ),
-                  SizedBox(height: _sx(context, 10)),
+                  
+                  // ESPACIADO EXACTO
+                  const SizedBox(height: 30),
+
                   _ActionCard(
                     icon: Icons.bluetooth,
                     title: 'Amuleto Bluetooth',
                     subtitle: subtitleBle,
                     onTap: _showAmuletoSheet,
                   ),
-                  SizedBox(height: vgap),
+                  const SizedBox(height: 16),
                   _ActionCard(
                     icon: Icons.person_add_alt_1,
                     title: 'Contacto de Emergencia',
@@ -597,7 +548,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       const SnackBar(content: Text('Función no implementada')),
                     ),
                   ),
-                  SizedBox(height: vgap),
+                  const SizedBox(height: 16),
                   _ActionCard(
                     icon: Icons.download_outlined,
                     title: 'Exportar Historial',
