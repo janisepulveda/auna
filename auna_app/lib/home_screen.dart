@@ -21,16 +21,18 @@ class _HomeScreenState extends State<HomeScreen> {
   static const String _stems      = 'assets/imagenes/tallos.PNG';
   static const String _buds       = 'assets/imagenes/brotes.PNG';
 
-  // Tulipanes = umbral LEVE (intensidad 1–3)
-  static const List<String> _tulipStages = [
-    'assets/imagenes/tulipanes_0.PNG',
-    'assets/imagenes/tulipanes_1.PNG',
-    'assets/imagenes/tulipanes_2.PNG',
-    'assets/imagenes/tulipanes_3.PNG',
-    'assets/imagenes/tulipanes_abiertos.PNG',
+  // --- NUEVA NARRATIVA ---
+
+  // Nomeolvides = UMBRAL LEVE (intensidad 1–3)
+  static const List<String> _forgetMeNotStages = [
+    'assets/imagenes/nomeolvides_0.PNG',
+    'assets/imagenes/nomeolvides_1.PNG',
+    'assets/imagenes/nomeolvides_2.PNG',
+    'assets/imagenes/nomeolvides_3.PNG',
+    'assets/imagenes/nomeolvides_abiertas.PNG',
   ];
 
-  // Margaritas = umbral MODERADO (intensidad 4–7)
+  // Margaritas = UMBRAL MODERADO (intensidad 4–7)
   static const List<String> _daisyStages = [
     'assets/imagenes/margaritas_0.PNG',
     'assets/imagenes/margaritas_1.PNG',
@@ -39,13 +41,13 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/imagenes/margaritas_abiertas.PNG',
   ];
 
-  // Nomeolvides = umbral SEVERO (intensidad 8–10)
-  static const List<String> _forgetMeNotStages = [
-    'assets/imagenes/nomeolvides_0.PNG',
-    'assets/imagenes/nomeolvides_1.PNG',
-    'assets/imagenes/nomeolvides_2.PNG',
-    'assets/imagenes/nomeolvides_3.PNG',
-    'assets/imagenes/nomeolvides_abiertas.PNG',
+  // Tulipanes = UMBRAL SEVERO (intensidad 8–10)
+  static const List<String> _tulipStages = [
+    'assets/imagenes/tulipanes_0.PNG',
+    'assets/imagenes/tulipanes_1.PNG',
+    'assets/imagenes/tulipanes_2.PNG',
+    'assets/imagenes/tulipanes_3.PNG',
+    'assets/imagenes/tulipanes_abiertos.PNG',
   ];
 
   @override
@@ -56,16 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
       _background,
       _stems,
       _buds,
-      ..._tulipStages,
-      ..._daisyStages,
-      ..._forgetMeNotStages,
+      ..._forgetMeNotStages, // Leve
+      ..._daisyStages,       // Moderado
+      ..._tulipStages,       // Severo
     ];
     for (final path in allAssets) {
       precacheImage(AssetImage(path), context);
     }
   }
 
-    // utilidades
+  // utilidades
 
   // clamp 0..4 para indexar las listas
   int _stageIndex(int count) {
@@ -101,14 +103,23 @@ class _HomeScreenState extends State<HomeScreen> {
         Positioned.fill(
           child: Consumer<UserProvider>(
             builder: (context, userProvider, _) {
+              // 1. Calculamos cuántas crisis hay de cada tipo
               final leve = _leveCount(userProvider);
               final moderado = _moderadoCount(userProvider);
               final severo = _severoCount(userProvider);
 
-              final leveAsset     = _tulipStages[_stageIndex(leve)];
+              // 2. Asignamos el asset correcto según tu nueva narrativa
+              
+              // Leve -> Nomeolvides
+              final leveAsset = _forgetMeNotStages[_stageIndex(leve)];
+              
+              // Moderado -> Margaritas
               final moderadoAsset = _daisyStages[_stageIndex(moderado)];
-              final severoAsset   = _forgetMeNotStages[_stageIndex(severo)];
+              
+              // Severo -> Tulipanes
+              final severoAsset = _tulipStages[_stageIndex(severo)];
 
+              // Clave única para animar cambios
               final comboKey =
                   '$_background|$_stems|$_buds|$leveAsset|$moderadoAsset|$severoAsset';
 
@@ -131,9 +142,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundAsset: _background,
                   stemsAsset: _stems,
                   budsAsset: _buds,
-                  leveAsset: leveAsset,
-                  moderadoAsset: moderadoAsset,
-                  severoAsset: severoAsset,
+                  leveAsset: leveAsset,         // Nomeolvides
+                  moderadoAsset: moderadoAsset, // Margaritas
+                  severoAsset: severoAsset,     // Tulipanes
                 ),
               );
             },
@@ -162,6 +173,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   const CrisisDetailScreen(),
                             ),
                           );
+                          // Forzar actualización al volver (aunque Provider debería manejarlo)
                           setState(() {});
                         },
                         customBorder: const CircleBorder(),
@@ -177,7 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           child: const Icon(
                             Icons.add,
-                            color: Colors.white, // icono blanco para contraste
+                            color: Colors.white,
                             size: 26,
                           ),
                         ),
@@ -195,7 +207,6 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 // fondo compuesto: capas fijas + 3 capas de flores
-
 class _FlowerBackground extends StatelessWidget {
   final String backgroundAsset;
   final String stemsAsset;
@@ -220,12 +231,16 @@ class _FlowerBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          _FullScreenCroppedImage(asset: backgroundAsset), // fondo verde
+          _FullScreenCroppedImage(asset: backgroundAsset), // fondo
           _FullScreenCroppedImage(asset: stemsAsset),       // tallos
-          _FullScreenCroppedImage(asset: budsAsset),        // brotes base
-          _FullScreenCroppedImage(asset: leveAsset),        // tulipanes
-          _FullScreenCroppedImage(asset: moderadoAsset),    // margaritas
-          _FullScreenCroppedImage(asset: severoAsset),      // nomeolvides
+          _FullScreenCroppedImage(asset: budsAsset),        // brotes
+          
+          // Aquí defines el orden visual de las capas (z-index)
+          // Lo he dejado en el orden de intensidad, pero si artísticamente
+          // los tulipanes deben ir detrás, cambia el orden de estas líneas:
+          _FullScreenCroppedImage(asset: leveAsset),        // Nomeolvides
+          _FullScreenCroppedImage(asset: moderadoAsset),    // Margaritas
+          _FullScreenCroppedImage(asset: severoAsset),      // Tulipanes
         ],
       ),
     );

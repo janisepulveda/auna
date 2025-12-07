@@ -168,7 +168,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           // ===== CONTENIDO =====
           SafeArea(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 0), // Bottom padding removed here to use margin inside
               child: Column(
                 children: [
                   const Text(
@@ -186,6 +186,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     child: Align(
                       alignment: Alignment.topCenter,
                       child: Container(
+                        // 👇 AQUÍ ESTÁ EL ARREGLO: Margin inferior para que flote
+                        margin: const EdgeInsets.only(bottom: 24),
+                        
                         padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(24),
@@ -215,6 +218,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
       lastDay: DateTime.now().add(const Duration(days: 365)),
       focusedDay: _focusedDay,
       calendarFormat: CalendarFormat.month,
+      
+      // Ajustamos altura de filas para que sea compacto
+      rowHeight: 42, 
 
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
       onDaySelected: _onDaySelected,
