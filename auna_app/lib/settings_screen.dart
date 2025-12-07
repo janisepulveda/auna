@@ -404,7 +404,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Auna - Registro de Episodios de Dolor', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.Text('Auna', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                 pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
               ],
             ),
