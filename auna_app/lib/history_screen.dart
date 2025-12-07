@@ -51,6 +51,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _updateSelectedDayCrises(selectedDay);
     });
 
+    // Pequeño delay para que la UI fluya mejor al seleccionar
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         _showCrisisDetailSheet(selectedDay);
@@ -58,39 +59,46 @@ class _HistoryScreenState extends State<HistoryScreen> {
     });
   }
 
+  // --- MODAL DESLIZABLE MODIFICADO ---
   void _showCrisisDetailSheet(DateTime day) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
+      isScrollControlled: true, // Permite altura variable
+      useSafeArea: true, // Evita que se solape con la barra de estado al expandir
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.3),
+      barrierColor: Colors.black.withValues(alpha: 0.3),
       builder: (context) {
         return DraggableScrollableSheet(
           expand: false,
-          initialChildSize: 0.35,
-          minChildSize: 0.25,
-          maxChildSize: 0.95,
+          initialChildSize: 0.35, // Altura inicial (35%)
+          minChildSize: 0.25,    // Altura mínima al bajar
+          maxChildSize: 1.0,     // CAMBIO: Permite llegar al 100% de la pantalla
+          snap: true,            // CAMBIO: Se ajusta automáticamente al soltar
+          snapSizes: const [0.35, 1.0], // Puntos de ajuste (Inicial y Full)
           builder: (BuildContext context, ScrollController scrollController) {
             return Container(
               decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
               ),
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Barra de arrastre (Handle)
                   Center(
                     child: Container(
                       width: 40,
                       height: 5,
+                      margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: Colors.grey[300],
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  
+                  // Título
                   Text(
                     "Episodios del ${DateFormat.yMMMMd('es_CL').format(day)}",
                     style: const TextStyle(
@@ -101,10 +109,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   const Divider(color: Colors.black26),
                   const SizedBox(height: 8),
+
+                  // Lista de crisis
                   Expanded(
                     child: _selectedDayCrises.isEmpty
                         ? ListView(
-                            controller: scrollController,
+                            controller: scrollController, // Importante para el drag
                             children: const [
                               SizedBox(height: 40),
                               Center(
@@ -117,8 +127,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             ],
                           )
                         : ListView.builder(
-                            controller: scrollController,
+                            controller: scrollController, // Conecta el scroll con el sheet
                             itemCount: _selectedDayCrises.length,
+                            padding: const EdgeInsets.only(bottom: 20),
                             itemBuilder: (context, index) {
                               final crisis = _selectedDayCrises[index];
                               return _buildCrisisListItem(crisis);
@@ -141,7 +152,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // ===== FONDO JPG A PANTALLA COMPLETA =====
+          // ===== FONDO JPG =====
           Image.asset(
             'assets/imagenes/fondo.JPG',
             fit: BoxFit.cover,
@@ -197,8 +208,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
       focusedDay: _focusedDay,
       calendarFormat: CalendarFormat.month,
       
-      // 👇 AJUSTE AQUÍ: Aumentamos la altura de cada fila
-      // Antes estaba en 42. Ahora en 52 ocupará más espacio vertical.
       rowHeight: 52, 
 
       selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
@@ -297,8 +306,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
+                // Helper para mostrar texto de duración (coherente con settings)
                 Text(
-                  '${crisis.duration} min',
+                  _getDurationLabel(crisis.duration),
                   style: const TextStyle(color: Colors.black54),
                 ),
               ],
@@ -322,6 +332,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
         ),
       ),
     );
+  }
+
+  // Pequeño helper para mostrar la duración en texto en la lista también
+  String _getDurationLabel(int d) {
+    if (d == 15) return 'Segundos';
+    if (d == 45) return '< 1 min';
+    if (d == 90) return '1–2 min';
+    if (d == 120) return 'Ráfagas';
+    return '$d min';
   }
 
   Widget _buildIntensityBar(double intensity) {

@@ -1,32 +1,27 @@
 // lib/user_provider.dart
+
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Importante para guardar
-import 'dart:convert'; // Importante para convertir datos
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart'; // <--- IMPORTANTE: Nuevo import para SMS
 
-// generador de ids únicos para cada crisis
 var uuid = const Uuid();
 
-// modelo simple de usuario (nombre y correo)
+// Modelo simple de usuario
 class UserData {
   final String name;
   final String email;
   UserData({required this.name, required this.email});
 
-  // Convertir a JSON para guardar
-  Map<String, dynamic> toJson() => {
-    'name': name,
-    'email': email,
-  };
-
-  // Crear desde JSON al cargar
+  Map<String, dynamic> toJson() => {'name': name, 'email': email};
   factory UserData.fromJson(Map<String, dynamic> json) => UserData(
     name: json['name'],
     email: json['email'],
   );
 }
 
-// modelo de crisis
+// Modelo de crisis
 class CrisisModel {
   final String id;
   final DateTime date;
@@ -46,7 +41,6 @@ class CrisisModel {
     required this.symptoms,
   });
 
-  // Convertir a JSON
   Map<String, dynamic> toJson() => {
     'id': id,
     'date': date.toIso8601String(),
@@ -57,11 +51,10 @@ class CrisisModel {
     'symptoms': symptoms,
   };
 
-  // Crear desde JSON
   factory CrisisModel.fromJson(Map<String, dynamic> json) => CrisisModel(
     id: json['id'],
     date: DateTime.parse(json['date']),
-    intensity: json['intensity'],
+    intensity: (json['intensity'] as num).toDouble(),
     duration: json['duration'],
     notes: json['notes'],
     trigger: json['trigger'],
@@ -70,6 +63,11 @@ class CrisisModel {
 }
 
 class UserProvider with ChangeNotifier {
+  
+  UserProvider() {
+    loadData(); 
+  }
+
   UserData? _user;
   UserData? get user => _user;
 
@@ -78,61 +76,71 @@ class UserProvider with ChangeNotifier {
 
   int get crisisCount => _registeredCrises.length;
 
+  // Contacto de emergencia
+  String? _emergencyName;
+  String? get emergencyName => _emergencyName;
+
   String? _emergencyPhone;
   String? get emergencyPhone => _emergencyPhone;
 
-  // --- PERSISTENCIA: Cargar datos al iniciar ---
+  // --- Cargar datos ---
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // 1. Cargar Usuario
     final String? userJson = prefs.getString('userData');
     if (userJson != null) {
       _user = UserData.fromJson(jsonDecode(userJson));
     }
 
-    // 2. Cargar Crisis
     final List<String> crisesJson = prefs.getStringList('registeredCrises') ?? [];
     _registeredCrises = crisesJson
         .map((str) => CrisisModel.fromJson(jsonDecode(str)))
         .toList();
 
-    // 3. Cargar Teléfono
+    // Cargar contacto
     _emergencyPhone = prefs.getString('emergencyPhone');
+    _emergencyName = prefs.getString('emergencyName');
     
     notifyListeners();
   }
 
-  // --- PERSISTENCIA: Guardar datos ---
+  // --- Guardar datos ---
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     
-    // Usuario
     if (_user != null) {
       await prefs.setString('userData', jsonEncode(_user!.toJson()));
     } else {
       await prefs.remove('userData');
     }
 
-    // Crisis
     final List<String> listJson = _registeredCrises
         .map((c) => jsonEncode(c.toJson()))
         .toList();
     await prefs.setStringList('registeredCrises', listJson);
 
-    // Teléfono
     if (_emergencyPhone != null) {
       await prefs.setString('emergencyPhone', _emergencyPhone!);
     } else {
       await prefs.remove('emergencyPhone');
     }
+
+    if (_emergencyName != null) {
+      await prefs.setString('emergencyName', _emergencyName!);
+    } else {
+      await prefs.remove('emergencyName');
+    }
   }
 
-  // guarda o limpia el teléfono de emergencia; notifica cambios
-  void setEmergencyPhone(String? phone) {
+  // --- Guarda nombre y teléfono ---
+  void setEmergencyContact(String? name, String? phone) {
     final p = phone?.trim();
+    final n = name?.trim();
+    
     _emergencyPhone = (p == null || p.isEmpty) ? null : p;
-    _saveData(); // Guardar
+    _emergencyName = (n == null || n.isEmpty) ? null : n;
+    
+    _saveData();
     notifyListeners();
   }
 
@@ -144,25 +152,25 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // inicia sesión configurando nombre y correo
   void login(String name, String email) {
     _user = UserData(name: name, email: email);
-    _registeredCrises.clear(); // Limpiar datos anteriores si cambia usuario
+    _registeredCrises.clear();
     _emergencyPhone = null;
-    _saveData(); // Guardar
+    _emergencyName = null;
+    _saveData();
     notifyListeners();
   }
 
-  // cierra sesión y limpia el historial local
   void logout() {
     _user = null;
     _registeredCrises.clear();
     _emergencyPhone = null;
-    _saveData(); // Guardar limpieza
+    _emergencyName = null;
+    _saveData();
     notifyListeners();
   }
 
-  // crea y agrega un nuevo registro de crisis
+  // --- Registro Manual ---
   CrisisModel registerCrisis({
     required double intensity,
     required int duration,
@@ -180,12 +188,12 @@ class UserProvider with ChangeNotifier {
       symptoms: symptoms,
     );
     _registeredCrises.add(newCrisis);
-    _saveData(); // Guardar
+    _saveData();
     notifyListeners();
     return newCrisis;
   }
 
-  // actualiza campos de una crisis existente
+  // --- Actualización ---
   void updateCrisis({
     required String id,
     required double intensity,
@@ -201,8 +209,56 @@ class UserProvider with ChangeNotifier {
       _registeredCrises[idx].notes = notes;
       _registeredCrises[idx].trigger = trigger;
       _registeredCrises[idx].symptoms = symptoms;
-      _saveData(); // Guardar
+      _saveData();
       notifyListeners();
+    }
+  }
+
+  // =========================================================
+  //        NUEVAS FUNCIONES PARA EL AMULETO / BLE
+  // =========================================================
+
+  // 1. REGISTRO RÁPIDO (Presión corta)
+  void registerQuickCrisis() {
+    registerCrisis(
+      intensity: 5.0, // Intensidad media por defecto
+      duration: 15,   // 15 = "Segundos" según tu configuración
+      notes: "Registro rápido desde Amuleto",
+      trigger: "Otro",
+      symptoms: [],
+    );
+    debugPrint("Crisis registrada desde el amuleto (Quick Crisis)");
+  }
+
+  // 2. PROTOCOLO DE EMERGENCIA (Presión larga > 3s)
+  Future<void> triggerEmergencyProtocol() async {
+    if (_emergencyPhone == null) {
+      debugPrint("No hay contacto de emergencia configurado");
+      return;
+    }
+
+    // El mensaje "humano" acordado
+    const mensaje = "Hola, estoy pasando por un episodio de dolor intenso. Por favor contáctame para verificar que estoy bien.";
+    
+    final uri = Uri(
+      scheme: 'sms',
+      path: _emergencyPhone,
+      queryParameters: <String, String>{
+        'body': mensaje,
+      },
+    );
+
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        // Fallback para Android (codificación de espacios y caracteres)
+        final uriString = 'sms:$_emergencyPhone?body=${Uri.encodeComponent(mensaje)}';
+        await launchUrl(Uri.parse(uriString));
+      }
+      debugPrint("Abriendo app de mensajes de emergencia...");
+    } catch (e) {
+      debugPrint('Error enviando SMS de emergencia: $e');
     }
   }
 }

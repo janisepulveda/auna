@@ -19,6 +19,7 @@ import 'ble_manager.dart';
 // --- PALETA APP (UI) ---
 const _navy = Colors.white; 
 const _bg = Color(0xFF061D17); 
+const _lotusGreen = Color(0xFF748204);
 
 // --- UTILIDADES UI ---
 double _sx(BuildContext c, [double v = 1]) {
@@ -27,14 +28,14 @@ double _sx(BuildContext c, [double v = 1]) {
   return v * s;
 }
 
-// Estilos Glass (UI)
+// Estilos Glass
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
   borderRadius: BorderRadius.circular(24),
   color: Colors.black.withValues(alpha: 0.18),
   border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
 );
 
-// Tarjeta de acción (UI)
+// Tarjeta de acción
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -135,6 +136,123 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   
+  // --- DIÁLOGO DE CONTACTO (NOMBRE + TELÉFONO) ---
+  void _showContactDialog() {
+    final up = Provider.of<UserProvider>(context, listen: false);
+    
+    // Preparar teléfono (quitar prefijo visualmente)
+    String currentNumber = up.emergencyPhone ?? '';
+    const String prefix = '+56 9 ';
+    if (currentNumber.startsWith(prefix)) {
+      currentNumber = currentNumber.substring(prefix.length);
+    }
+
+    final phoneController = TextEditingController(text: currentNumber);
+    // Nuevo: Controlador para el nombre
+    final nameController = TextEditingController(text: up.emergencyName ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0A2A22),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Contacto de Emergencia', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Configura a quién quieres notificar en caso de crisis.',
+              style: TextStyle(color: Colors.white70, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            
+            // CAMPO NOMBRE
+            const Text('Nombre (Ej: Mamá, Pedro)', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: nameController,
+              textCapitalization: TextCapitalization.words,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                hintText: 'Nombre del contacto',
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _lotusGreen),
+                ),
+                filled: true,
+                fillColor: Colors.black.withValues(alpha: 0.2),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+            
+            const SizedBox(height: 16),
+            
+            // CAMPO TELÉFONO
+            const Text('Número', style: TextStyle(color: Colors.white70, fontSize: 12)),
+            const SizedBox(height: 6),
+            TextField(
+              controller: phoneController,
+              keyboardType: TextInputType.phone,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+              decoration: InputDecoration(
+                prefixText: prefix, 
+                prefixStyle: const TextStyle(
+                  color: Colors.white70, 
+                  fontSize: 16, 
+                  fontWeight: FontWeight.bold
+                ),
+                hintText: '1234 5678', 
+                hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.3)),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _lotusGreen),
+                ),
+                filled: true,
+                fillColor: Colors.black.withValues(alpha: 0.2),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.white60)),
+          ),
+          TextButton(
+            onPressed: () {
+              final cleanNumber = phoneController.text.trim();
+              final cleanName = nameController.text.trim();
+
+              if (cleanNumber.isNotEmpty) {
+                // Guardar ambos
+                up.setEmergencyContact(cleanName, '$prefix$cleanNumber');
+              } else {
+                // Si borra el número, borramos el contacto entero
+                up.setEmergencyContact(null, null);
+              }
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Contacto guardado')),
+              );
+            },
+            child: const Text('Guardar', style: TextStyle(color: _lotusGreen, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
   Map<String, int> countSymptoms(Iterable<String> xs) {
     final m = <String, int>{};
     for (final raw in xs) {
@@ -213,7 +331,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // --- GENERACIÓN DEL PDF CORREGIDA CON VALORES REALES ---
+  // --- GENERACIÓN DEL PDF ---
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
@@ -224,7 +342,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (!mounted) return;
 
-    // Colores definidos localmente
     final pdfTextMain = PdfColor.fromInt(0xFF111827);
     final pdfTextSub = PdfColor.fromInt(0xFF6B7280);
     final pdfAccent = PdfColor.fromInt(0xFF0F766E);
@@ -237,7 +354,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final start = from ?? DateTime.fromMillisecondsSinceEpoch(0);
     final end = to ?? DateTime.now();
 
-    // Ordenar descendente (más reciente primero)
     final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
     crises.sort((a, b) => b.date.compareTo(a.date));
 
@@ -249,27 +365,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    // --- CÁLCULO DE ESTADÍSTICAS ---
     final totalCrisis = crises.length;
     final totalIntensity = crises.fold<double>(0, (a, c) => a + c.intensity);
     final avgIntensity = totalCrisis > 0 ? totalIntensity / totalCrisis : 0.0;
     
-    // TRADUCTOR DE DURACIÓN (Mapeo basado en crisis_detail_screen.dart)
-    // 15  -> Segundos
-    // 45  -> < 1 min
-    // 90  -> 1–2 min
-    // 120 -> Ráfagas
     String durationToLabel(int d) {
       if (d == 15) return 'Segundos';
       if (d == 45) return '< 1 min';
-      if (d == 90) return '1-2 min'; // Guion simple
+      if (d == 90) return '1-2 min'; 
       if (d == 120) return 'Ráfagas';
-      // Fallback si viene otro número
       if (d < 60) return '$d seg';
       return '${(d / 60).toStringAsFixed(0)} min';
     }
 
-    // Contadores para las categorías (Usando los valores reales 15, 45, 90, 120)
     int cSegundos = 0;
     int cMenos1 = 0;
     int c1a2 = 0;
@@ -288,7 +396,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       }
     }
 
-    // Calcular "Duración Frecuente" (Moda)
     String frequentDurationLabel = '-';
     int maxCount = 0;
     if (cSegundos > maxCount) { maxCount = cSegundos; frequentDurationLabel = 'Segundos'; }
@@ -296,7 +403,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (c1a2 > maxCount) { maxCount = c1a2; frequentDurationLabel = '1-2 min'; }
     if (cRafagas > maxCount) { maxCount = cRafagas; frequentDurationLabel = 'Ráfagas'; }
 
-    // Top Desencadenantes
     final triggerMap = <String, int>{};
     for (var c in crises) {
       if (c.trigger.isNotEmpty) {
@@ -315,8 +421,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return s[0].toUpperCase() + s.substring(1);
     }
 
-    // --- HELPERS PDF ---
-    
     pw.Widget buildInfoColumn(String label, String value) {
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -404,7 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Auna', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.Text('Auna - Registro de Crisis Emocionales', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                 pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
               ],
             ),
@@ -476,7 +580,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     pw.Text('Distribución por Duración', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
                     pw.SizedBox(height: 8),
-                    // AQUÍ ESTÁ LA CORRECCIÓN CLAVE
                     buildCompactRow('Segundos', '$cSegundos', totalCrisis),
                     buildCompactRow('< 1 min', '$cMenos1', totalCrisis),
                     buildCompactRow('1-2 min', '$c1a2', totalCrisis),
@@ -624,7 +727,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // UI PRINCIPAL
   @override
   Widget build(BuildContext context) {
+    // Escuchamos el proveedor
     final ble = context.watch<BleManager>();
+    final userProvider = context.watch<UserProvider>(); 
+    
+    // Obtener datos del contacto
+    final String? phone = userProvider.emergencyPhone;
+    final String? name = userProvider.emergencyName;
+
+    // Lógica para el subtítulo: "Nombre • Teléfono"
+    String emergencySubtitle;
+    if (phone != null && phone.isNotEmpty) {
+      if (name != null && name.isNotEmpty) {
+        emergencySubtitle = '$name • $phone';
+      } else {
+        emergencySubtitle = phone;
+      }
+    } else {
+      emergencySubtitle = 'Configura un contacto para notificar';
+    }
+
     final subtitleBle = ble.isConnected
         ? 'Conectado — recibiendo eventos'
         : (ble.connectionStateLabel.startsWith('Reconectando')
@@ -654,12 +776,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     onTap: _showAmuletoSheet,
                   ),
                   const SizedBox(height: 16),
+                  
+                  // --- TARJETA DE EMERGENCIA ---
                   _ActionCard(
                     icon: Icons.person_add_alt_1,
                     title: 'Contacto de Emergencia',
-                    subtitle: 'Configura un contacto para notificar',
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Función no implementada'))),
+                    subtitle: emergencySubtitle,
+                    onTap: _showContactDialog, 
                   ),
+                  // -----------------------------
+                  
                   const SizedBox(height: 16),
                   _ActionCard(
                     icon: Icons.download_outlined,
