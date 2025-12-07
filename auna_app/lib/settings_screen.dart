@@ -16,25 +16,25 @@ import 'package:provider/provider.dart';
 import 'user_provider.dart';
 import 'ble_manager.dart';
 
-// paleta base
+// --- PALETA APP (UI) ---
 const _navy = Colors.white; 
 const _bg = Color(0xFF061D17); 
 
-// utilidad de escala (la mantenemos solo para elementos internos si hace falta)
+// --- UTILIDADES UI ---
 double _sx(BuildContext c, [double v = 1]) {
   final w = MediaQuery.of(c).size.width;
-  final s = (w / 390).clamp(.75, 0.95);
+  final s = (w / 390).clamp(0.75, 0.95);
   return v * s;
 }
 
-// estilos glass (ACTUALIZADO: Coincide con HistoryScreen)
+// Estilos Glass (UI)
 BoxDecoration _glassContainer({required BuildContext context}) => BoxDecoration(
-  borderRadius: BorderRadius.circular(24), // Igual que el calendario
-  color: Colors.black.withValues(alpha: 0.18), // Fondo oscuro
+  borderRadius: BorderRadius.circular(24),
+  color: Colors.black.withValues(alpha: 0.18),
   border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
 );
 
-// tarjeta de acción
+// Tarjeta de acción (UI)
 class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -50,7 +50,6 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ajustamos tamaños fijos para consistencia
     const double iconSize = 28;
     const double tileSide = 48;
     const double gap = 16;
@@ -67,7 +66,6 @@ class _ActionCard extends StatelessWidget {
             decoration: _glassContainer(context: context),
             child: Row(
               children: [
-                // icono con fondo suave
                 Container(
                   width: tileSide,
                   height: tileSide,
@@ -86,7 +84,6 @@ class _ActionCard extends StatelessWidget {
                   child: Icon(icon, color: Colors.white, size: iconSize),
                 ),
                 SizedBox(width: gap),
-                // textos
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +127,6 @@ class _ActionCard extends StatelessWidget {
   }
 }
 
-// configuración
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
   @override
@@ -138,12 +134,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  // colores pdf
-  PdfColor get _pdfNavy => const PdfColor.fromInt(0xFF38455C);
-  PdfColor get _pdfIce => const PdfColor.fromInt(0xFFE6F1F5);
-  PdfColor get _pdfLine => const PdfColor.fromInt(0xFFB7C7D1);
-  PdfColor get _pdfGrey => const PdfColor.fromInt(0xFF6B7A88);
-
+  
   Map<String, int> countSymptoms(Iterable<String> xs) {
     final m = <String, int>{};
     for (final raw in xs) {
@@ -154,7 +145,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return m;
   }
 
-  // selector de periodo antes de exportar el pdf
   Future<void> _pickAndExportPdf() async {
     final choice = await showModalBottomSheet<String>(
       context: context,
@@ -166,33 +156,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           children: [
             const ListTile(
               title: Text('Exportar PDF', style: TextStyle(color: Colors.white)),
-              subtitle: Text('Elige el período',
-                  style: TextStyle(color: Colors.white70)),
+              subtitle: Text('Elige el período', style: TextStyle(color: Colors.white70)),
             ),
             ListTile(
               leading: const Icon(Icons.all_inbox, color: Colors.white),
-              title: const Text('Todo el historial',
-                  style: TextStyle(color: Colors.white)),
+              title: const Text('Todo el historial', style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('all'),
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.calendar_view_month, color: Colors.white),
-              title: const Text('Mes actual',
-                  style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.calendar_view_month, color: Colors.white),
+              title: const Text('Mes actual', style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('month'),
             ),
             ListTile(
-              leading:
-                  const Icon(Icons.calendar_today, color: Colors.white),
-              title: const Text('Últimos 30 días',
-                  style: TextStyle(color: Colors.white)),
+              leading: const Icon(Icons.calendar_today, color: Colors.white),
+              title: const Text('Últimos 30 días', style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('30'),
             ),
             ListTile(
               leading: const Icon(Icons.date_range, color: Colors.white),
-              title: const Text('Elegir rango…',
-                  style: TextStyle(color: Colors.white)),
+              title: const Text('Elegir rango…', style: TextStyle(color: Colors.white)),
               onTap: () => Navigator.of(ctx).pop('range'),
             ),
             const SizedBox(height: 8),
@@ -204,16 +187,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     DateTime? from;
     DateTime? to;
+    final now = DateTime.now();
+
     if (choice == 'month') {
-      final now = DateTime.now();
       from = DateTime(now.year, now.month, 1);
       to = DateTime(now.year, now.month + 1, 1);
     } else if (choice == '30') {
-      to = DateTime.now();
+      to = now;
       from = to.subtract(const Duration(days: 30));
     } else if (choice == 'range') {
       if (!mounted) return;
-      final now = DateTime.now();
       final picked = await showDateRangePicker(
         context: context,
         firstDate: DateTime(now.year - 5),
@@ -230,7 +213,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // exportar a PDF (Lógica intacta)
+  // --- GENERACIÓN DEL PDF CORREGIDA CON VALORES REALES ---
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
@@ -241,14 +224,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (!mounted) return;
 
+    // Colores definidos localmente
+    final pdfTextMain = PdfColor.fromInt(0xFF111827);
+    final pdfTextSub = PdfColor.fromInt(0xFF6B7280);
+    final pdfAccent = PdfColor.fromInt(0xFF0F766E);
+    final pdfBgLight = PdfColor.fromInt(0xFFF3F4F6);
+
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
-    final userName = up.user?.name ?? 'Usuario Auna';
+    final userName = up.user?.name ?? 'Usuario';
+    
     final start = from ?? DateTime.fromMillisecondsSinceEpoch(0);
     final end = to ?? DateTime.now();
 
-    final crises =
-        all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
+    // Ordenar descendente (más reciente primero)
+    final crises = all.where((c) => c.date.isAfter(start) && c.date.isBefore(end)).toList();
+    crises.sort((a, b) => b.date.compareTo(a.date));
+
     if (crises.isEmpty) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -257,151 +249,307 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return;
     }
 
-    crises.sort((a, b) => a.date.compareTo(b.date));
-    final df = DateFormat.yMMMMd('es_CL');
-    final tf = DateFormat.Hm('es_CL');
+    // --- CÁLCULO DE ESTADÍSTICAS ---
+    final totalCrisis = crises.length;
+    final totalIntensity = crises.fold<double>(0, (a, c) => a + c.intensity);
+    final avgIntensity = totalCrisis > 0 ? totalIntensity / totalCrisis : 0.0;
+    
+    // TRADUCTOR DE DURACIÓN (Mapeo basado en crisis_detail_screen.dart)
+    // 15  -> Segundos
+    // 45  -> < 1 min
+    // 90  -> 1–2 min
+    // 120 -> Ráfagas
+    String durationToLabel(int d) {
+      if (d == 15) return 'Segundos';
+      if (d == 45) return '< 1 min';
+      if (d == 90) return '1-2 min'; // Guion simple
+      if (d == 120) return 'Ráfagas';
+      // Fallback si viene otro número
+      if (d < 60) return '$d seg';
+      return '${(d / 60).toStringAsFixed(0)} min';
+    }
 
-    final totalIntensity = crises.fold<double>(0, (a, c) => a + c.intensity.toDouble());
-    final avgIntensity = totalIntensity / crises.length;
+    // Contadores para las categorías (Usando los valores reales 15, 45, 90, 120)
+    int cSegundos = 0;
+    int cMenos1 = 0;
+    int c1a2 = 0;
+    int cRafagas = 0;
 
-    final durations =
-        crises.map((c) => c.duration).where((d) => d > 0).toList();
-    final totalDuration = durations.isEmpty ? 0 : durations.reduce((a, b) => a + b);
-    final double? avgDuration =
-        durations.isEmpty ? null : totalDuration / durations.length;
-
-    int leves = 0, moderados = 0, severos = 0;
-    for (final c in crises) {
-      final v = c.intensity.toInt();
-      if (v <= 3) {
-        leves++;
-      } else if (v <= 7) {
-        moderados++;
-      } else {
-        severos++;
+    for (var c in crises) {
+      final d = c.duration;
+      if (d == 15) {
+        cSegundos++;
+      } else if (d == 45) {
+        cMenos1++;
+      } else if (d == 90) {
+        c1a2++;
+      } else if (d == 120) {
+        cRafagas++;
       }
     }
 
-    final symptomsCounts = countSymptoms(crises.expand((c) => c.symptoms));
-    String symptomsSummary(Map<String, int> map, {int take = 6}) {
-      if (map.isEmpty) return '-';
-      final ord = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
-      return ord.take(take).map((e) => '• ${e.key}: ${e.value}').join('\n');
+    // Calcular "Duración Frecuente" (Moda)
+    String frequentDurationLabel = '-';
+    int maxCount = 0;
+    if (cSegundos > maxCount) { maxCount = cSegundos; frequentDurationLabel = 'Segundos'; }
+    if (cMenos1 > maxCount) { maxCount = cMenos1; frequentDurationLabel = '< 1 min'; }
+    if (c1a2 > maxCount) { maxCount = c1a2; frequentDurationLabel = '1-2 min'; }
+    if (cRafagas > maxCount) { maxCount = cRafagas; frequentDurationLabel = 'Ráfagas'; }
+
+    // Top Desencadenantes
+    final triggerMap = <String, int>{};
+    for (var c in crises) {
+      if (c.trigger.isNotEmpty) {
+        triggerMap.update(c.trigger, (v) => v + 1, ifAbsent: () => 1);
+      }
+    }
+    final topTriggers = triggerMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value)); 
+
+    final dfFull = DateFormat("EEEE, d 'de' MMMM 'de' yyyy", 'es_CL');
+    final dfShort = DateFormat('dd/MM/yyyy', 'es_CL');
+    final tf = DateFormat.Hm('es_CL');
+
+    String capitalize(String s) {
+      if (s.isEmpty) return s;
+      return s[0].toUpperCase() + s.substring(1);
     }
 
-    final pdfNavy = _pdfNavy, pdfIce = _pdfIce, pdfLine = _pdfLine, pdfGrey = _pdfGrey;
+    // --- HELPERS PDF ---
+    
+    pw.Widget buildInfoColumn(String label, String value) {
+      return pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(label, style: pw.TextStyle(fontSize: 9, color: pdfTextSub)),
+          pw.Text(value, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
+        ],
+      );
+    }
 
-    pw.Widget headCell(String t) => pw.Container(
-          padding: const pw.EdgeInsets.symmetric(vertical: 5, horizontal: 6),
-          color: pdfIce,
-          child: pw.Text(
-            t,
-            style: pw.TextStyle(
-              fontWeight: pw.FontWeight.bold,
-              fontSize: 10,
-              color: pdfNavy,
-            ),
+    pw.Widget buildStatCard(String title, String value, String subtitle) {
+      return pw.Container(
+        width: 150, 
+        padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+        decoration: pw.BoxDecoration(
+          color: PdfColors.white,
+          border: pw.Border.all(color: PdfColors.grey300),
+          borderRadius: pw.BorderRadius.circular(8),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(title, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+            pw.SizedBox(height: 4),
+            pw.Text(value, style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: pdfAccent)),
+            pw.Text(subtitle, style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey500)),
+          ],
+        ),
+      );
+    }
+
+    pw.Widget buildCompactRow(String label, String count, int total) {
+      final pct = total > 0 ? (int.parse(count) / total * 100).round() : 0;
+      return pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(label, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+            pw.Text('$count ($pct%)', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+          ],
+        ),
+      );
+    }
+
+    pw.Widget buildDetailBadge(String label, String value) {
+      return pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: pw.BoxDecoration(
+          color: pdfBgLight,
+          borderRadius: pw.BorderRadius.circular(4),
+        ),
+        child: pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Text(label, style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey600)),
+            pw.Text(value, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
+          ],
+        ),
+      );
+    }
+
+    pw.Widget buildDetailRow(String label, String value) {
+      return pw.Padding(
+        padding: const pw.EdgeInsets.only(top: 4),
+        child: pw.RichText(
+          text: pw.TextSpan(
+            children: [
+              pw.TextSpan(text: '$label ', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
+              pw.TextSpan(text: value, style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey800)),
+            ],
           ),
-        );
-
-    pw.Widget cell(String t,
-            {pw.Alignment align = pw.Alignment.topLeft, double fs = 9.8}) =>
-        pw.Container(
-          padding: const pw.EdgeInsets.symmetric(vertical: 4.5, horizontal: 6),
-          alignment: align,
-          child: pw.Text(t, style: pw.TextStyle(fontSize: fs), softWrap: true),
-        );
-
-    final summaryTable = pw.Table(
-      border: pw.TableBorder.all(color: pdfLine, width: .6),
-      columnWidths: const {0: pw.FixedColumnWidth(175), 1: pw.FlexColumnWidth(1)},
-      children: [
-        pw.TableRow(children: [headCell('Indicador'), headCell('Valor')]),
-        pw.TableRow(children: [cell('Total de crisis'), cell('${crises.length}', align: pw.Alignment.center)]),
-        pw.TableRow(children: [cell('Intensidad promedio'), cell(avgIntensity.toStringAsFixed(1), align: pw.Alignment.center)]),
-        pw.TableRow(children: [cell('Distribución (Leves / Moderadas / Severas)'), cell('$leves / $moderados / $severos', align: pw.Alignment.center)]),
-        pw.TableRow(children: [cell('Duración promedio (seg)'), cell(avgDuration == null ? '-' : avgDuration.round().toString(), align: pw.Alignment.center)]),
-        pw.TableRow(children: [cell('Duración total'), cell(_formatDuration(totalDuration))]),
-        pw.TableRow(children: [cell('Síntomas más frecuentes'), cell(symptomsSummary(symptomsCounts))]),
-      ],
-    );
-
-    final detailTable = pw.TableHelper.fromTextArray(
-      border: pw.TableBorder.all(color: pdfLine, width: .6),
-      columnWidths: const {
-        0: pw.FixedColumnWidth(82),
-        1: pw.FixedColumnWidth(36),
-        2: pw.FixedColumnWidth(48),
-        3: pw.FixedColumnWidth(62),
-        4: pw.FlexColumnWidth(1.2),
-        5: pw.FlexColumnWidth(2.0),
-        6: pw.FlexColumnWidth(2.0),
-      },
-      cellStyle: const pw.TextStyle(fontSize: 9.8),
-      cellAlignments: const {
-        0: pw.Alignment.topLeft,
-        1: pw.Alignment.topLeft,
-        2: pw.Alignment.center,
-        3: pw.Alignment.center,
-        4: pw.Alignment.topLeft,
-        5: pw.Alignment.topLeft,
-        6: pw.Alignment.topLeft,
-      },
-      headerStyle:
-          pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 10, color: pdfNavy),
-      headerCellDecoration: pw.BoxDecoration(color: _pdfIce),
-      headers: ['Fecha', 'Hora', 'Intensidad', 'Duración (seg)', 'Desencadenante', 'Síntomas', 'Notas'],
-      data: crises
-          .map((c) => [
-                df.format(c.date),
-                tf.format(c.date),
-                c.intensity.toInt().toString(),
-                c.duration.toString(),
-                c.trigger.isEmpty ? '-' : c.trigger,
-                c.symptoms.isEmpty ? '-' : c.symptoms.join(', '),
-                c.notes.trim().isEmpty ? '-' : c.notes.trim(),
-              ])
-          .toList(),
-    );
+        ),
+      );
+    }
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.fromLTRB(32, 28, 32, 28),
-        footer: (ctx) => pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}',
-              style: pw.TextStyle(fontSize: 9, color: _pdfGrey)),
+        margin: const pw.EdgeInsets.all(40),
+        footer: (ctx) => pw.Column(
+          children: [
+            pw.Divider(color: PdfColors.grey300),
+            pw.SizedBox(height: 4),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text('Auna - Registro de Episodios de Dolor', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+              ],
+            ),
+            pw.Text('Documento confidencial - Solo para uso personal o médico', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey500)),
+          ]
         ),
         build: (ctx) => [
-          pw.Text('Reporte de Crisis - $userName',
-              style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
-          pw.SizedBox(height: 4),
-          pw.Container(height: 1, color: pdfLine),
-          pw.SizedBox(height: 4),
-          pw.Text('Generado el: ${DateFormat.yMMMMd('es_CL').add_Hm().format(DateTime.now())}',
-              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
-          pw.Text(
-              'Período: ${DateFormat.yMMMd('es_CL').format(start)} – ${DateFormat.yMMMd('es_CL').format(end.subtract(const Duration(days: 1)))}',
-              style: pw.TextStyle(fontSize: 9, color: pdfGrey)),
-          pw.SizedBox(height: 10),
-          pw.Text('Resumen',
-              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
-          pw.SizedBox(height: 6),
-          summaryTable,
+          // 1. ENCABEZADO
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text('Auna', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: pdfAccent)),
+                  pw.Text('Reporte Médico', style: pw.TextStyle(fontSize: 16, color: pdfTextMain)),
+                ],
+              ),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text('Generado el:', style: pw.TextStyle(fontSize: 10, color: pdfTextSub)),
+                  pw.Text(dfShort.format(DateTime.now()), style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
+                ],
+              ),
+            ],
+          ),
+          pw.SizedBox(height: 20),
+          
+          // 2. INFO PACIENTE
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: pdfBgLight,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                buildInfoColumn('Paciente', userName),
+                buildInfoColumn('Período Analizado', '${dfShort.format(start)} - ${dfShort.format(end)}'),
+                buildInfoColumn('Total Días', '${end.difference(start).inDays + 1} días'),
+              ],
+            ),
+          ),
+          pw.SizedBox(height: 24),
+
+          // 3. RESUMEN
+          pw.Text('Resumen del Período', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
+          pw.SizedBox(height: 8),
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              buildStatCard('Total Crisis', '$totalCrisis', 'Eventos registrados'),
+              buildStatCard('Intensidad Prom.', avgIntensity.toStringAsFixed(1), '/ 10 Escala'),
+              buildStatCard('Duración Frecuente', frequentDurationLabel, 'Categoría más común'),
+            ],
+          ),
+          pw.SizedBox(height: 24),
+
+          // 4. ESTADÍSTICAS
+          pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Distribución por Duración', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 8),
+                    // AQUÍ ESTÁ LA CORRECCIÓN CLAVE
+                    buildCompactRow('Segundos', '$cSegundos', totalCrisis),
+                    buildCompactRow('< 1 min', '$cMenos1', totalCrisis),
+                    buildCompactRow('1-2 min', '$c1a2', totalCrisis),
+                    buildCompactRow('Ráfagas', '$cRafagas', totalCrisis),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: 20),
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Desencadenantes Principales', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+                    pw.SizedBox(height: 8),
+                    if (topTriggers.isEmpty) pw.Text('No registrados', style: const pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+                    ...topTriggers.take(3).map((e) => buildCompactRow(e.key, '${e.value}', totalCrisis)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          pw.SizedBox(height: 30),
+          pw.Divider(color: PdfColors.grey300),
+          pw.SizedBox(height: 20),
+
+          // 5. LISTA DETALLADA
+          pw.Text('Registro Detallado de Crisis', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
           pw.SizedBox(height: 12),
-          pw.Text('Detalle de Crisis',
-              style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfNavy)),
-          pw.SizedBox(height: 6),
-          detailTable,
+
+          ...List.generate(crises.length, (index) {
+            final c = crises[index];
+            return pw.Container(
+              margin: const pw.EdgeInsets.only(bottom: 12),
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                border: pw.Border.all(color: PdfColors.grey300),
+                borderRadius: pw.BorderRadius.circular(6),
+              ),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Text(capitalize(dfFull.format(c.date)), style: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: pdfAccent)),
+                    ],
+                  ),
+                  pw.SizedBox(height: 8),
+                  pw.Row(
+                    children: [
+                      buildDetailBadge('Hora', tf.format(c.date)),
+                      pw.SizedBox(width: 12),
+                      buildDetailBadge('Duración', durationToLabel(c.duration)),
+                      pw.SizedBox(width: 12),
+                      buildDetailBadge('Intensidad', '${c.intensity.toInt()}/10'),
+                    ],
+                  ),
+                  pw.SizedBox(height: 8),
+                  if (c.trigger.isNotEmpty) buildDetailRow('Desencadenante:', c.trigger),
+                  if (c.symptoms.isNotEmpty) buildDetailRow('Síntomas:', c.symptoms.join(', ')),
+                  if (c.notes.isNotEmpty) buildDetailRow('Notas:', c.notes),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
 
     try {
       final dir = await getApplicationDocumentsDirectory();
-      final name =
-          "historial_auna_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf";
+      final name = "reporte_auna_${DateFormat('yyyyMMdd_HHmm').format(DateTime.now())}.pdf";
       final file = File("${dir.path}/$name");
       await file.writeAsBytes(await pdf.save());
       final res = await OpenFile.open(file.path);
@@ -414,23 +562,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (mounted) {
         final msg = e.toString();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  'Error exportando PDF: ${msg.length > 100 ? msg.substring(0, 100) : msg}')),
+          SnackBar(content: Text('Error: $msg')),
         );
       }
     }
-  }
-
-  String _formatDuration(int seconds) {
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    if (m >= 60) {
-      final h = m ~/ 60;
-      final mm = (m % 60).toString().padLeft(2, '0');
-      return '${h}h ${mm}m';
-    }
-    return '${m}m ${s}s';
   }
 
   // BLE
@@ -456,9 +591,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             children: [
               ListTile(
                 leading: Icon(
-                  conectado
-                      ? Icons.bluetooth_connected
-                      : Icons.bluetooth_searching,
+                  conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
                   color: Colors.white,
                 ),
                 title: Text(
@@ -466,9 +599,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: const TextStyle(color: Colors.white),
                 ),
                 subtitle: Text(
-                  conectado
-                      ? 'Recibiendo eventos del amuleto'
-                      : 'Toca para conectar',
+                  conectado ? 'Recibiendo eventos del amuleto' : 'Toca para conectar',
                   style: const TextStyle(color: Colors.white70),
                 ),
                 onTap: conectado ? null : ble.connect,
@@ -476,8 +607,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               if (conectado)
                 ListTile(
                   leading: const Icon(Icons.link_off, color: Colors.white),
-                  title: const Text('Desconectar',
-                      style: TextStyle(color: Colors.white)),
+                  title: const Text('Desconectar', style: TextStyle(color: Colors.white)),
                   onTap: () {
                     Navigator.pop(context);
                     ble.disconnect();
@@ -491,11 +621,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // UI principal ACTUALIZADA PARA ALINEACIÓN PERFECTA
+  // UI PRINCIPAL
   @override
   Widget build(BuildContext context) {
     final ble = context.watch<BleManager>();
-
     final subtitleBle = ble.isConnected
         ? 'Conectado — recibiendo eventos'
         : (ble.connectionStateLabel.startsWith('Reconectando')
@@ -509,30 +638,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: [
-          // fondo
-          Image.asset(
-            'assets/imagenes/fondo.JPG',
-            fit: BoxFit.cover,
-          ),
+          Image.asset('assets/imagenes/fondo.JPG', fit: BoxFit.cover),
           SafeArea(
             bottom: false,
             child: SingleChildScrollView(
-              // PADDING ESTANDARIZADO CON HISTORY SCREEN
               padding: const EdgeInsets.fromLTRB(24, 20, 24, 100),
               child: Column(
                 children: [
-                  const Text(
-                    'Configuración',
-                    style: TextStyle(
-                      fontSize: 26, // Igual que Historial
-                      fontWeight: FontWeight.w800, // Igual que Historial
-                      color: _navy,
-                    ),
-                  ),
-                  
-                  // ESPACIADO EXACTO
+                  const Text('Configuración', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: _navy)),
                   const SizedBox(height: 30),
-
                   _ActionCard(
                     icon: Icons.bluetooth,
                     title: 'Amuleto Bluetooth',
@@ -544,9 +658,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     icon: Icons.person_add_alt_1,
                     title: 'Contacto de Emergencia',
                     subtitle: 'Configura un contacto para notificar',
-                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Función no implementada')),
-                    ),
+                    onTap: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Función no implementada'))),
                   ),
                   const SizedBox(height: 16),
                   _ActionCard(
