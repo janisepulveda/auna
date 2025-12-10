@@ -342,10 +342,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
     } catch (_) {}
     if (!mounted) return;
 
-    final pdfTextMain = PdfColor.fromInt(0xFF111827);
-    final pdfTextSub = PdfColor.fromInt(0xFF6B7280);
-    final pdfAccent = PdfColor.fromInt(0xFF0F766E);
-    final pdfBgLight = PdfColor.fromInt(0xFFF3F4F6);
+    const pdfTextMain = PdfColor.fromInt(0xFF111827);
+    const pdfTextSub = PdfColor.fromInt(0xFF6B7280);
+    const pdfAccent = PdfColor.fromInt(0xFF0F766E);
+    const pdfBgLight = PdfColor.fromInt(0xFFF3F4F6);
 
     final up = Provider.of<UserProvider>(context, listen: false);
     final all = up.registeredCrises.toList();
@@ -425,7 +425,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       return pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
-          pw.Text(label, style: pw.TextStyle(fontSize: 9, color: pdfTextSub)),
+          pw.Text(label, style: const pw.TextStyle(fontSize: 9, color: pdfTextSub)),
           pw.Text(value, style: pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold, color: pdfTextMain)),
         ],
       );
