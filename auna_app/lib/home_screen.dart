@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:ui';
 import 'crisis_detail_screen.dart';
 import 'user_provider.dart';
-import 'dart:ui';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,16 +14,12 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  // assets
-
-  // Fondo fijo y capas estructurales
+  // --- ASSETS ---
   static const String _background = 'assets/imagenes/fondo.JPG';
   static const String _stems      = 'assets/imagenes/tallos.PNG';
   static const String _buds       = 'assets/imagenes/brotes.PNG';
 
-  // --- NUEVA NARRATIVA ---
-
-  // Nomeolvides = UMBRAL LEVE (intensidad 1–3)
+  // Nomeolvides = UMBRAL LEVE (1–3)
   static const List<String> _forgetMeNotStages = [
     'assets/imagenes/nomeolvides_0.PNG',
     'assets/imagenes/nomeolvides_1.PNG',
@@ -32,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/imagenes/nomeolvides_abiertas.PNG',
   ];
 
-  // Margaritas = UMBRAL MODERADO (intensidad 4–7)
+  // Margaritas = UMBRAL MODERADO (4–7)
   static const List<String> _daisyStages = [
     'assets/imagenes/margaritas_0.PNG',
     'assets/imagenes/margaritas_1.PNG',
@@ -41,7 +37,7 @@ class _HomeScreenState extends State<HomeScreen> {
     'assets/imagenes/margaritas_abiertas.PNG',
   ];
 
-  // Tulipanes = UMBRAL SEVERO (intensidad 8–10)
+  // Tulipanes = UMBRAL SEVERO (8–10)
   static const List<String> _tulipStages = [
     'assets/imagenes/tulipanes_0.PNG',
     'assets/imagenes/tulipanes_1.PNG',
@@ -53,45 +49,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Precargamos TODAS las capas para evitar parpadeos
     final allAssets = <String>[
-      _background,
-      _stems,
-      _buds,
-      ..._forgetMeNotStages, // Leve
-      ..._daisyStages,       // Moderado
-      ..._tulipStages,       // Severo
+      _background, _stems, _buds,
+      ..._forgetMeNotStages,
+      ..._daisyStages,
+      ..._tulipStages,
     ];
     for (final path in allAssets) {
       precacheImage(AssetImage(path), context);
     }
   }
 
-  // utilidades
-
-  // clamp 0..4 para indexar las listas
   int _stageIndex(int count) {
     if (count <= 0) return 0;
     if (count >= 4) return 4;
     return count;
-  }
-
-  int _leveCount(UserProvider provider) {
-    return provider.registeredCrises
-        .where((c) => c.intensity >= 1 && c.intensity <= 3)
-        .length;
-  }
-
-  int _moderadoCount(UserProvider provider) {
-    return provider.registeredCrises
-        .where((c) => c.intensity >= 4 && c.intensity <= 7)
-        .length;
-  }
-
-  int _severoCount(UserProvider provider) {
-    return provider.registeredCrises
-        .where((c) => c.intensity >= 8 && c.intensity <= 10)
-        .length;
   }
 
   @override
@@ -99,59 +71,51 @@ class _HomeScreenState extends State<HomeScreen> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // fondo: capas superpuestas
+        // -------------------------------------------------------------
+        // 1. CAPAS ESTÁTICAS (Fondo, Tallos, Brotes)
+        // Están fuera del Consumer para que NUNCA se muevan ni parpadeen.
+        // Usamos el mismo widget alineador para todo.
+        // -------------------------------------------------------------
+        const _FullScreenCroppedImage(asset: _background),
+        const _FullScreenCroppedImage(asset: _stems),
+        const _FullScreenCroppedImage(asset: _buds),
+
+        // -------------------------------------------------------------
+        // 2. CAPAS ANIMADAS INDIVIDUALMENTE (Flores)
+        // -------------------------------------------------------------
         Positioned.fill(
           child: Consumer<UserProvider>(
             builder: (context, userProvider, _) {
-              // 1. Calculamos cuántas crisis hay de cada tipo
-              final leve = _leveCount(userProvider);
-              final moderado = _moderadoCount(userProvider);
-              final severo = _severoCount(userProvider);
+              // 1. Calculamos conteos
+              final leve = userProvider.registeredCrises
+                  .where((c) => c.intensity >= 1 && c.intensity <= 3).length;
+              final moderado = userProvider.registeredCrises
+                  .where((c) => c.intensity >= 4 && c.intensity <= 7).length;
+              final severo = userProvider.registeredCrises
+                  .where((c) => c.intensity >= 8 && c.intensity <= 10).length;
 
-              // 2. Asignamos el asset correcto según tu nueva narrativa
-              
-              // Leve -> Nomeolvides
+              // 2. Asignamos Assets
               final leveAsset = _forgetMeNotStages[_stageIndex(leve)];
-              
-              // Moderado -> Margaritas
               final moderadoAsset = _daisyStages[_stageIndex(moderado)];
-              
-              // Severo -> Tulipanes
               final severoAsset = _tulipStages[_stageIndex(severo)];
 
-              // Clave única para animar cambios
-              final comboKey =
-                  '$_background|$_stems|$_buds|$leveAsset|$moderadoAsset|$severoAsset';
-
-              return AnimatedSwitcher(
-                duration: const Duration(milliseconds: 320),
-                switchInCurve: Curves.easeOut,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.98, end: 1.0)
-                          .animate(animation),
-                      child: child,
-                    ),
-                  );
-                },
-                child: _FlowerBackground(
-                  key: ValueKey(comboKey),
-                  backgroundAsset: _background,
-                  stemsAsset: _stems,
-                  budsAsset: _buds,
-                  leveAsset: leveAsset,         // Nomeolvides
-                  moderadoAsset: moderadoAsset, // Margaritas
-                  severoAsset: severoAsset,     // Tulipanes
-                ),
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Cada tipo de flor tiene su propio animador independiente.
+                  // Si cambia 'leveAsset', solo esa capa hace el fade suave.
+                  _AnimatedFlowerLayer(asset: leveAsset),
+                  _AnimatedFlowerLayer(asset: moderadoAsset),
+                  _AnimatedFlowerLayer(asset: severoAsset),
+                ],
               );
             },
           ),
         ),
 
-        // botón flotante único (registrar crisis)
+        // -------------------------------------------------------------
+        // 3. BOTÓN FLOTANTE
+        // -------------------------------------------------------------
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -169,12 +133,10 @@ class _HomeScreenState extends State<HomeScreen> {
                           await Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  const CrisisDetailScreen(),
+                              builder: (context) => const CrisisDetailScreen(),
                             ),
                           );
-                          // Forzar actualización al volver (aunque Provider debería manejarlo)
-                          setState(() {});
+                          // El provider actualizará la UI automáticamente
                         },
                         customBorder: const CircleBorder(),
                         child: Container(
@@ -206,60 +168,73 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// fondo compuesto: capas fijas + 3 capas de flores
-class _FlowerBackground extends StatelessWidget {
-  final String backgroundAsset;
-  final String stemsAsset;
-  final String budsAsset;
-  final String leveAsset;
-  final String moderadoAsset;
-  final String severoAsset;
+// -----------------------------------------------------------------
+// WIDGETS AUXILIARES
+// -----------------------------------------------------------------
 
-  const _FlowerBackground({
-    super.key,
-    required this.backgroundAsset,
-    required this.stemsAsset,
-    required this.budsAsset,
-    required this.leveAsset,
-    required this.moderadoAsset,
-    required this.severoAsset,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRect(
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          _FullScreenCroppedImage(asset: backgroundAsset), // fondo
-          _FullScreenCroppedImage(asset: stemsAsset),       // tallos
-          _FullScreenCroppedImage(asset: budsAsset),        // brotes
-          
-          // Aquí defines el orden visual de las capas (z-index)
-          // Lo he dejado en el orden de intensidad, pero si artísticamente
-          // los tulipanes deben ir detrás, cambia el orden de estas líneas:
-          _FullScreenCroppedImage(asset: leveAsset),        // Nomeolvides
-          _FullScreenCroppedImage(asset: moderadoAsset),    // Margaritas
-          _FullScreenCroppedImage(asset: severoAsset),      // Tulipanes
-        ],
-      ),
-    );
-  }
-}
-
-/// Imagen a pantalla completa con recorte centrado.
+/// Imagen estática a pantalla completa (Para Fondo, Tallos, Brotes)
+/// Usa BoxFit.cover para garantizar que todo calce perfecto siempre.
 class _FullScreenCroppedImage extends StatelessWidget {
   final String asset;
-  const _FullScreenCroppedImage({required this.asset});
+  
+  // Agregamos key al constructor por si acaso
+  const _FullScreenCroppedImage({super.key, required this.asset});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox.expand(
       child: Image.asset(
         asset,
-        fit: BoxFit.cover,
+        fit: BoxFit.cover, // Mantiene tu alineación original
         alignment: Alignment.center,
         gaplessPlayback: true,
+      ),
+    );
+  }
+}
+
+/// Capa de flor con animación suave INDIVIDUAL
+class _AnimatedFlowerLayer extends StatelessWidget {
+  final String asset;
+
+  const _AnimatedFlowerLayer({required this.asset});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSwitcher(
+      // Duración lenta y relajante para el efecto "Bloom" suave
+      duration: const Duration(milliseconds: 1000),
+      
+      // Curvas suaves
+      switchInCurve: Curves.easeInOut,
+      switchOutCurve: Curves.easeInOut,
+      
+      // LayoutBuilder asegura que el widget animado ocupe todo el espacio
+      // y mantenga la alineación del Stack
+      layoutBuilder: (currentChild, previousChildren) {
+        return Stack(
+          fit: StackFit.expand,
+          alignment: Alignment.center,
+          children: <Widget>[
+            ...previousChildren,
+            if (currentChild != null) currentChild,
+          ],
+        );
+      },
+
+      // Solo Opacidad (Fade), sin escala para evitar desalineación visual
+      transitionBuilder: (child, animation) {
+        return FadeTransition(
+          opacity: animation,
+          child: child,
+        );
+      },
+      
+      // Reutilizamos tu widget de imagen para garantizar que calce perfecto
+      // Usamos la Key basada en el asset para que AnimatedSwitcher detecte el cambio
+      child: _FullScreenCroppedImage(
+        key: ValueKey(asset), 
+        asset: asset,
       ),
     );
   }

@@ -672,53 +672,60 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // BLE
+  // BLE
   void _showAmuletoSheet() {
-    final bleWatch = context.watch<BleManager>();
-    final ble = context.read<BleManager>();
-    final conectado = bleWatch.isConnected;
-
+    // 1. Borramos el 'context.watch' de aquí porque causaba el error rojo.
+    
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      backgroundColor: _bg,
+      backgroundColor: _bg, // Asegúrate de que _bg esté definido arriba en tu archivo
       builder: (_) => SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: _sx(context, 12),
-            right: _sx(context, 12),
-            bottom: _sx(context, 12),
-            top: _sx(context, 6),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Icon(
-                  conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
-                  color: Colors.white,
-                ),
-                title: Text(
-                  conectado ? 'Conectado' : bleWatch.connectionStateLabel,
-                  style: const TextStyle(color: Colors.white),
-                ),
-                subtitle: Text(
-                  conectado ? 'Recibiendo eventos del amuleto' : 'Toca para conectar',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                onTap: conectado ? null : ble.connect,
+        // 2. Usamos Consumer AQUÍ dentro. Así la hoja se reconstruye sola al cambiar el estado.
+        child: Consumer<BleManager>(
+          builder: (context, ble, child) {
+            final conectado = ble.isConnected;
+            
+            return Padding(
+              padding: EdgeInsets.only(
+                left: _sx(context, 12),
+                right: _sx(context, 12),
+                bottom: _sx(context, 12),
+                top: _sx(context, 6),
               ),
-              if (conectado)
-                ListTile(
-                  leading: const Icon(Icons.link_off, color: Colors.white),
-                  title: const Text('Desconectar', style: TextStyle(color: Colors.white)),
-                  onTap: () {
-                    Navigator.pop(context);
-                    ble.disconnect();
-                  },
-                ),
-              const SizedBox(height: 6),
-            ],
-          ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ListTile(
+                    leading: Icon(
+                      conectado ? Icons.bluetooth_connected : Icons.bluetooth_searching,
+                      color: Colors.white,
+                    ),
+                    title: Text(
+                      conectado ? 'Conectado' : ble.connectionStateLabel,
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    subtitle: Text(
+                      conectado ? 'Recibiendo eventos del amuleto' : 'Toca para conectar',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                    // Usamos ble.connect directamente
+                    onTap: conectado ? null : () => ble.connect(),
+                  ),
+                  if (conectado)
+                    ListTile(
+                      leading: const Icon(Icons.link_off, color: Colors.white),
+                      title: const Text('Desconectar', style: TextStyle(color: Colors.white)),
+                      onTap: () {
+                        Navigator.pop(context);
+                        ble.disconnect();
+                      },
+                    ),
+                  const SizedBox(height: 6),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
