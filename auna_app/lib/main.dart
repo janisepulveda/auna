@@ -122,7 +122,7 @@ class MyApp extends StatelessWidget {
 /// pantalla placeholder para editar una crisis
 /// se activa al tocar el botón "editar" desde una notificación
 class EditCrisisScreen extends StatelessWidget {
-  final String? crisisId;
+  final String? crisisId;       
   const EditCrisisScreen({super.key, this.crisisId});
 
   @override

@@ -4,6 +4,9 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+// Import necesario para cargar assets
+import 'package:flutter/services.dart' show rootBundle;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -136,11 +139,9 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   
-  // --- DIÁLOGO DE CONTACTO (NOMBRE + TELÉFONO) ---
   void _showContactDialog() {
     final up = Provider.of<UserProvider>(context, listen: false);
     
-    // Preparar teléfono (quitar prefijo visualmente)
     String currentNumber = up.emergencyPhone ?? '';
     const String prefix = '+56 9 ';
     if (currentNumber.startsWith(prefix)) {
@@ -148,7 +149,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     final phoneController = TextEditingController(text: currentNumber);
-    // Nuevo: Controlador para el nombre
     final nameController = TextEditingController(text: up.emergencyName ?? '');
 
     showDialog(
@@ -166,8 +166,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               style: TextStyle(color: Colors.white70, fontSize: 13),
             ),
             const SizedBox(height: 16),
-            
-            // CAMPO NOMBRE
             const Text('Nombre (Ej: Mamá, Pedro)', style: TextStyle(color: Colors.white70, fontSize: 12)),
             const SizedBox(height: 6),
             TextField(
@@ -190,10 +188,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
             ),
-            
             const SizedBox(height: 16),
-            
-            // CAMPO TELÉFONO
             const Text('Número', style: TextStyle(color: Colors.white70, fontSize: 12)),
             const SizedBox(height: 6),
             TextField(
@@ -233,12 +228,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
             onPressed: () {
               final cleanNumber = phoneController.text.trim();
               final cleanName = nameController.text.trim();
-
               if (cleanNumber.isNotEmpty) {
-                // Guardar ambos
                 up.setEmergencyContact(cleanName, '$prefix$cleanNumber');
               } else {
-                // Si borra el número, borramos el contacto entero
                 up.setEmergencyContact(null, null);
               }
               Navigator.pop(ctx);
@@ -251,16 +243,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ],
       ),
     );
-  }
-
-  Map<String, int> countSymptoms(Iterable<String> xs) {
-    final m = <String, int>{};
-    for (final raw in xs) {
-      final k = raw.trim();
-      if (k.isEmpty) continue;
-      m.update(k, (v) => v + 1, ifAbsent: () => 1);
-    }
-    return m;
   }
 
   Future<void> _pickAndExportPdf() async {
@@ -331,11 +313,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await _exportHistoryToPdf(from: from, to: to);
   }
 
-  // --- GENERACIÓN DEL PDF ---
+  // --- GENERACIÓN DEL PDF BLINDADA ---
   Future<void> _exportHistoryToPdf({DateTime? from, DateTime? to}) async {
     final pdf = pw.Document();
 
     if (!mounted) return;
+
+    // --- CARGA SEGURA DE FUENTES ---
+    // Usamos variables para las fuentes
+    pw.Font ttf;
+    pw.Font ttfBold;
+
+    try {
+      // Intentamos cargar la fuente desde assets
+      final fontData = await rootBundle.load("assets/tipografias/Roboto-Regular.ttf");
+      ttf = pw.Font.ttf(fontData);
+
+      // Intentamos cargar la negrita (si falla, usaremos la regular)
+      try {
+        final fontBoldData = await rootBundle.load("assets/tipografias/Roboto-Bold.ttf");
+        ttfBold = pw.Font.ttf(fontBoldData);
+      } catch (e) {
+        // Si no encuentra la bold, usamos la regular duplicada
+        ttfBold = ttf;
+      }
+    } catch (e) {
+      // SI FALLA (El error rojo que te salía)
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error: No encuentro la fuente Roboto. Ejecuta "flutter clean" y reinicia.'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+      return; // Detenemos aquí para no crashear
+    }
+
     try {
       await initializeDateFormatting('es_CL', null);
       Intl.defaultLocale ??= 'es_CL';
@@ -501,6 +516,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(40),
+        theme: pw.ThemeData.withFont(
+          base: ttf,
+          bold: ttfBold, 
+        ),
         footer: (ctx) => pw.Column(
           children: [
             pw.Divider(color: PdfColors.grey300),
@@ -508,7 +527,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                pw.Text('Auna - Registro de Crisis Emocionales', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                pw.Text('Auna', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                 pw.Text('Página ${ctx.pageNumber} de ${ctx.pagesCount}', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
               ],
             ),
@@ -672,16 +691,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // BLE
-  // BLE
   void _showAmuletoSheet() {
-    // 1. Borramos el 'context.watch' de aquí porque causaba el error rojo.
-    
     showModalBottomSheet(
       context: context,
       showDragHandle: true,
-      backgroundColor: _bg, // Asegúrate de que _bg esté definido arriba en tu archivo
+      backgroundColor: _bg, 
       builder: (_) => SafeArea(
-        // 2. Usamos Consumer AQUÍ dentro. Así la hoja se reconstruye sola al cambiar el estado.
         child: Consumer<BleManager>(
           builder: (context, ble, child) {
             final conectado = ble.isConnected;
@@ -709,7 +724,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       conectado ? 'Recibiendo eventos del amuleto' : 'Toca para conectar',
                       style: const TextStyle(color: Colors.white70),
                     ),
-                    // Usamos ble.connect directamente
                     onTap: conectado ? null : () => ble.connect(),
                   ),
                   if (conectado)
@@ -734,15 +748,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
   // UI PRINCIPAL
   @override
   Widget build(BuildContext context) {
-    // Escuchamos el proveedor
     final ble = context.watch<BleManager>();
     final userProvider = context.watch<UserProvider>(); 
     
-    // Obtener datos del contacto
     final String? phone = userProvider.emergencyPhone;
     final String? name = userProvider.emergencyName;
 
-    // Lógica para el subtítulo: "Nombre • Teléfono"
     String emergencySubtitle;
     if (phone != null && phone.isNotEmpty) {
       if (name != null && name.isNotEmpty) {

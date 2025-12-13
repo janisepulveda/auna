@@ -2,18 +2,14 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
     <key>LSApplicationQueriesSchemes</key>
     <array>
       <string>sms</string>
       <string>tel</string>
     </array>
+
     <key>NSBluetoothAlwaysUsageDescription</key>
     <string>Necesitamos Bluetooth para conectar el amuleto Auna y recibir alertas.</string>
-
     <key>NSBluetoothPeripheralUsageDescription</key>
     <string>La app usa Bluetooth para comunicarse con el amuleto Auna.</string>
     

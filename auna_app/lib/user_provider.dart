@@ -4,11 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
-import 'package:url_launcher/url_launcher.dart'; // <--- IMPORTANTE: Nuevo import para SMS
+import 'package:url_launcher/url_launcher.dart';
 
 var uuid = const Uuid();
 
-// Modelo simple de usuario
+// --- MODELOS ---
+
 class UserData {
   final String name;
   final String email;
@@ -21,7 +22,6 @@ class UserData {
   );
 }
 
-// Modelo de crisis
 class CrisisModel {
   final String id;
   final DateTime date;
@@ -62,6 +62,8 @@ class CrisisModel {
   );
 }
 
+// --- PROVIDER ---
+
 class UserProvider with ChangeNotifier {
   
   UserProvider() {
@@ -74,16 +76,13 @@ class UserProvider with ChangeNotifier {
   List<CrisisModel> _registeredCrises = [];
   List<CrisisModel> get registeredCrises => _registeredCrises;
 
-  int get crisisCount => _registeredCrises.length;
-
   // Contacto de emergencia
   String? _emergencyName;
   String? get emergencyName => _emergencyName;
-
   String? _emergencyPhone;
   String? get emergencyPhone => _emergencyPhone;
 
-  // --- Cargar datos ---
+  // --- CARGAR DATOS ---
   Future<void> loadData() async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -97,14 +96,13 @@ class UserProvider with ChangeNotifier {
         .map((str) => CrisisModel.fromJson(jsonDecode(str)))
         .toList();
 
-    // Cargar contacto
     _emergencyPhone = prefs.getString('emergencyPhone');
     _emergencyName = prefs.getString('emergencyName');
     
     notifyListeners();
   }
 
-  // --- Guardar datos ---
+  // --- GUARDAR DATOS ---
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     
@@ -124,7 +122,6 @@ class UserProvider with ChangeNotifier {
     } else {
       await prefs.remove('emergencyPhone');
     }
-
     if (_emergencyName != null) {
       await prefs.setString('emergencyName', _emergencyName!);
     } else {
@@ -132,14 +129,11 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  // --- Guarda nombre y teléfono ---
   void setEmergencyContact(String? name, String? phone) {
     final p = phone?.trim();
     final n = name?.trim();
-    
     _emergencyPhone = (p == null || p.isEmpty) ? null : p;
     _emergencyName = (n == null || n.isEmpty) ? null : n;
-    
     _saveData();
     notifyListeners();
   }
@@ -152,25 +146,7 @@ class UserProvider with ChangeNotifier {
     }
   }
 
-  void login(String name, String email) {
-    _user = UserData(name: name, email: email);
-    _registeredCrises.clear();
-    _emergencyPhone = null;
-    _emergencyName = null;
-    _saveData();
-    notifyListeners();
-  }
-
-  void logout() {
-    _user = null;
-    _registeredCrises.clear();
-    _emergencyPhone = null;
-    _emergencyName = null;
-    _saveData();
-    notifyListeners();
-  }
-
-  // --- Registro Manual ---
+  // --- REGISTRO MANUAL ---
   CrisisModel registerCrisis({
     required double intensity,
     required int duration,
@@ -193,7 +169,7 @@ class UserProvider with ChangeNotifier {
     return newCrisis;
   }
 
-  // --- Actualización ---
+  // --- ACTUALIZAR (AL EDITAR) ---
   void updateCrisis({
     required String id,
     required double intensity,
@@ -215,50 +191,67 @@ class UserProvider with ChangeNotifier {
   }
 
   // =========================================================
-  //        NUEVAS FUNCIONES PARA EL AMULETO / BLE
+  //        FUNCIONES PARA EL AMULETO (BLE)
   // =========================================================
 
-  // 1. REGISTRO RÁPIDO (Presión corta)
-  void registerQuickCrisis() {
-    registerCrisis(
-      intensity: 5.0, // Intensidad media por defecto
-      duration: 15,   // 15 = "Segundos" según tu configuración
-      notes: "Registro rápido desde Amuleto",
-      trigger: "Otro",
+  // 1. REGISTRO RÁPIDO (DATOS INCOMPLETOS)
+  String registerQuickCrisis() {
+    final now = DateTime.now();
+    final newId = uuid.v4();
+
+    final newCrisis = CrisisModel(
+      id: newId,
+      date: now,
+      // INTENSIDAD -1 PARA INDICAR "FALTA COMPLETAR"
+      intensity: -1.0, 
+      duration: 0,     
+      notes: "Registro automático desde Amuleto",
+      trigger: "Desconocido",
       symptoms: [],
     );
-    debugPrint("Crisis registrada desde el amuleto (Quick Crisis)");
+
+    _registeredCrises.add(newCrisis);
+    _saveData();
+    notifyListeners();
+    
+    debugPrint("✅ Crisis parcial guardada (Solo Hora). ID: $newId");
+    return newId; // Retornamos ID para la notificación
   }
 
-  // 2. PROTOCOLO DE EMERGENCIA (Presión larga > 3s)
+  // 2. PROTOCOLO DE EMERGENCIA
   Future<void> triggerEmergencyProtocol() async {
-    if (_emergencyPhone == null) {
-      debugPrint("No hay contacto de emergencia configurado");
-      return;
-    }
+    if (_emergencyPhone == null) return;
 
-    // El mensaje "humano" acordado
-    const mensaje = "Hola, estoy pasando por un episodio de dolor intenso. Por favor contáctame para verificar que estoy bien.";
+    const mensaje = "Hola, estoy pasando por un episodio de dolor intenso. Por favor contáctame.";
     
     final uri = Uri(
       scheme: 'sms',
       path: _emergencyPhone,
-      queryParameters: <String, String>{
-        'body': mensaje,
-      },
+      queryParameters: {'body': mensaje},
     );
 
     try {
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {
-        // Fallback para Android (codificación de espacios y caracteres)
         final uriString = 'sms:$_emergencyPhone?body=${Uri.encodeComponent(mensaje)}';
         await launchUrl(Uri.parse(uriString));
       }
-      debugPrint("Abriendo app de mensajes de emergencia...");
     } catch (e) {
-      debugPrint('Error enviando SMS de emergencia: $e');
+      debugPrint('Error SMS: $e');
     }
+  }
+
+  // --- LOGIN/LOGOUT ---
+  void login(String name, String email) {
+    _user = UserData(name: name, email: email);
+    _saveData();
+    notifyListeners();
+  }
+  void logout() {
+    _user = null;
+    _registeredCrises.clear();
+    _saveData();
+    notifyListeners();
   }
 }
