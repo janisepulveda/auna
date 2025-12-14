@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-// Llave global para navegación
+// Llave global para navegación (asegúrate de que main.dart la use)
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class NotificationService {
@@ -27,13 +27,13 @@ class NotificationService {
   );
 
   Future<void> init() async {
-    // Asegúrate de tener el icono 'ic_launcher' en android/app/src/main/res/mipmap-*/
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
     
+    // CORRECCIÓN AQUÍ: Cambiamos 'false' por 'true' para que iOS pida permiso
     const darwinInit = DarwinInitializationSettings(
-      requestAlertPermission: false,
-      requestBadgePermission: false,
-      requestSoundPermission: false,
+      requestAlertPermission: true,  // <--- IMPORTANTE
+      requestBadgePermission: true,  // <--- IMPORTANTE
+      requestSoundPermission: true,  // <--- IMPORTANTE
       defaultPresentAlert: true,
       defaultPresentBanner: true,
       defaultPresentSound: true,
@@ -47,6 +47,7 @@ class NotificationService {
       onDidReceiveBackgroundNotificationResponse: _onTapNotificationBackground,
     );
 
+    // Permisos adicionales para Android
     if (Platform.isAndroid) {
       await _fln
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
@@ -56,17 +57,10 @@ class NotificationService {
         await Permission.notification.request();
       }
     }
-
-    if (Platform.isIOS) {
-      await _fln
-          .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>()
-          ?.requestPermissions(alert: true, badge: true, sound: true);
-    }
   }
 
   // --- MOSTRAR LA NOTIFICACIÓN ---
   Future<void> showCrisisNotification(Map<String, dynamic> crisisData) async {
-    // Como ahora siempre recibimos un mapa con ID, lo sacamos directo
     final String crisisId = crisisData['id'].toString();
 
     final androidDetails = AndroidNotificationDetails(
@@ -78,8 +72,6 @@ class NotificationService {
       playSound: true,
       enableVibration: true,
       styleInformation: const BigTextStyleInformation(''),
-      
-      // BOTÓN DE ACCIÓN
       actions: <AndroidNotificationAction>[
         const AndroidNotificationAction(
           'EDITAR_CRISIS', 
@@ -91,8 +83,9 @@ class NotificationService {
     );
 
     const iosDetails = DarwinNotificationDetails(
-      presentAlert: true,
-      presentSound: true,
+      presentAlert: true,   // Forzar alerta visual
+      presentSound: true,   // Forzar sonido
+      presentBanner: true,  // Forzar banner
       interruptionLevel: InterruptionLevel.timeSensitive,
     );
 
@@ -101,7 +94,7 @@ class NotificationService {
     await _fln.show(
       DateTime.now().millisecondsSinceEpoch.remainder(100000), 
       'Nuevo episodio detectado', 
-      'Se ha registrado un nuevo episodio de dolor. ¿Quieres editarlo?',
+      'Se ha registrado un nuevo episodio de dolor. Toca para completarlo.',
       details,
       payload: crisisId, 
     );
@@ -128,6 +121,7 @@ class NotificationService {
     final nav = rootNavigatorKey.currentState;
     if (nav == null) return;
     
+    // Navegamos a tu ruta '/crisis/edit' pasando el ID
     Future.microtask(() {
       nav.pushNamed('/crisis/edit', arguments: {'crisisId': crisisId});
     });
